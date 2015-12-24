@@ -11,22 +11,25 @@ extern crate crypto;
 extern crate rand;
 extern crate rustc_serialize;
 
-use std::io;
 
 use crypto::bcrypt::bcrypt;
 use crypto::util::fixed_time_eq;
 use rand::{Rng, OsRng};
 
 mod b64;
+mod errors;
+
+use errors::{BcryptResult, BcryptError};
 
 
 // Cost constants
 static MIN_COST: u32 = 4;
 static MAX_COST: u32 = 31;
-static DEFAULT_COST: u32 = 12;
+pub static DEFAULT_COST: u32 = 12;
 
 
 #[derive(Debug, PartialEq)]
+/// A bcrypt hash result before concatenating
 struct HashParts {
  cost: u32,
  salt: String,
@@ -34,16 +37,23 @@ struct HashParts {
 }
 
 impl HashParts {
+    /// Creates the bcrypt hash string from all its part
     fn format(self) -> String {
         // Cost need to have a length of 2 so padding with a 0 if cost < 10
         format!("$2y${:02}${}{}", self.cost, self.salt, self.hash)
     }
 }
 
-fn _hash(password: &str, cost: u32, salt: &[u8]) -> HashParts {
+/// The main meat: actually does the hashing and does some verification with
+/// the cost to ensure it's a correct one
+fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
+    if cost > MAX_COST || cost < MIN_COST {
+        return Err(BcryptError::InvalidCost);
+    }
+
     // Output is 24
     let mut output = [0u8; 24];
-    // We only consider the first 72 chars
+    // We only consider the first 72 chars so truncating if necessary
     let password_bytes: &[u8] = password.as_ref();
     let pass = if password_bytes.len() > 72 {
         &password_bytes[..72]
@@ -57,27 +67,16 @@ fn _hash(password: &str, cost: u32, salt: &[u8]) -> HashParts {
 
     bcrypt(cost, &salt, &vec, &mut output);
 
-    HashParts {
+    Ok(HashParts {
         cost: cost,
         salt: b64::encode(&salt),
-        hash: b64::encode(&output[..23])
-    }
+        hash: b64::encode(&output[..23]) // remember to remove the last byte
+    })
 }
 
-pub fn hash(password: &str, cost: u32) -> io::Result<String> {
-    // TODO: check cost value and error if necessary
-    let salt = {
-        let mut s = [0u8; 16];
-        let mut rng = try!(OsRng::new());
-        rng.fill_bytes(&mut s);
-        s
-    };
-    let hash_parts = _hash(password, cost, &salt);
-
-    Ok(hash_parts.format())
-}
-
-fn split_hash(hash: &str) -> HashParts {
+/// Takes a full hash and split it into 3 parts:
+/// cost, salt and hash
+fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     let mut parts = HashParts {
         cost: 0,
         salt: "".to_owned(),
@@ -89,7 +88,7 @@ fn split_hash(hash: &str) -> HashParts {
             0 => (),
             1 => match part {
                 "2y" | "2b" | "2a" => (),
-                _ => ()
+                _ => { return Err(BcryptError::InvalidPrefix); }
             },
             2 => {
                 if let Ok(c) = part.parse::<u32>() {
@@ -99,7 +98,6 @@ fn split_hash(hash: &str) -> HashParts {
                 }
             },
             3 => {
-                println!("{:?}, {}", part, part.len());
                 if part.len() == 53 {
                     parts.salt = part[..22].chars().collect();
                     parts.hash = part[22..].chars().collect();
@@ -109,18 +107,29 @@ fn split_hash(hash: &str) -> HashParts {
         }
     }
 
-    parts
+    Ok(parts)
 }
 
-pub fn verify(password: &str, hash: &str) -> Result<bool, ()> {
-    let parts = split_hash(hash);
-    println!("{:?}", parts);
-    // TODO: handle invalid hash parts
-    let salt = b64::decode(&parts.salt);
-    let generated = _hash(password, parts.cost, &salt);
-    println!("{:?}", generated);
+/// Generates a password hash using the cost given.
+/// The salt is generated randomly using the OS randomness
+pub fn hash(password: &str, cost: u32) -> BcryptResult<String> {
+    let salt = {
+        let mut s = [0u8; 16];
+        let mut rng = try!(OsRng::new());
+        rng.fill_bytes(&mut s);
+        s
+    };
+    let hash_parts = try!(_hash_password(password, cost, &salt));
 
-    // Hashes should be the same given same salt and round number
+    Ok(hash_parts.format())
+}
+
+/// Verify that a password is equivalent to the hash provided
+pub fn verify(password: &str, hash: &str) -> BcryptResult<bool> {
+    let parts = try!(split_hash(hash));
+    let salt = b64::decode(&parts.salt);
+    let generated = try!(_hash_password(password, parts.cost, &salt));
+
     Ok(fixed_time_eq(&b64::decode(&parts.hash), &b64::decode(&generated.hash)))
 }
 
@@ -132,7 +141,7 @@ mod tests {
     #[test]
     fn can_split_hash() {
         let hash = "$2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
-        let output = split_hash(hash);
+        let output = split_hash(hash).unwrap();
         let expected = HashParts {
             cost: 12,
             salt: "L6Bc/AlTQHyd9liGgGEZyO".to_owned(),

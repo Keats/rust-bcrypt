@@ -146,12 +146,15 @@ lazy_static! {
     };
 }
 
+/// First encode to base64 standard and then replaces char with the bcrypt
+/// alphabet and removes the '=' chars
 pub fn encode(words: &[u8]) -> String {
     let hash = words.to_base64(base64::STANDARD);
     let mut vec: Vec<String> = Vec::with_capacity(hash.len());
     for ch in hash.chars() {
         vec.push(STANDARD_TO_BCRYPT.get(&ch).unwrap().clone().to_string());
     }
+
     vec.concat().replace("=", "")
 }
 
@@ -169,6 +172,7 @@ pub fn decode(hash: &str) -> Vec<u8> {
             vec.push("=".to_owned());
         }
     }
+
     vec.concat().from_base64().unwrap()
 }
 
