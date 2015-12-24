@@ -78,14 +78,13 @@ pub fn hash(password: &str, cost: u32) -> io::Result<String> {
 }
 
 fn split_hash(hash: &str) -> HashParts {
-    let mut i = 0;
     let mut parts = HashParts {
         cost: 0,
         salt: "".to_owned(),
         hash: "".to_owned()
     };
 
-    for part in hash.split('$') {
+    for (i, part) in hash.split('$').enumerate() {
         match i {
             0 => (),
             1 => match part {
@@ -108,7 +107,6 @@ fn split_hash(hash: &str) -> HashParts {
             },
             _ => ()
         }
-        i += 1;
     }
 
     parts

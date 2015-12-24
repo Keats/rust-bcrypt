@@ -14,7 +14,7 @@ clippy = {version = "0.0.32", optional = true}
 rust-crypto = "0.2.34"
 rand = "0.3"
 lazy_static = "0.1"
-rustc-serialize = { git = "https://github.com/Keats/rustc-serialize" }
+rustc-serialize = "0.3"
 
 [features]
 default = []
