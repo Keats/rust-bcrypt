@@ -1,0 +1,25 @@
+[package]
+name = "bcrypt"
+version = "0.1.0"
+authors = ["Vincent Prouillet <vincent@wearewizards.io>"]
+license = "MIT"
+readme = "README.md"
+description = "Easily hash and verify passwords using bcrypt"
+homepage = "https://github.com/Keats/rust-bcrypt"
+repository = "https://github.com/Keats/rust-bcrypt"
+keywords = ["bcrypt", "password", "web", "hash"]
+
+[dependencies]
+clippy = {version = "0.0.32", optional = true}
+rust-crypto = "0.2.34"
+rand = "0.3"
+rustc-serialize = { git = "https://github.com/Keats/rustc-serialize" }
+
+[features]
+default = []
+dev = ["clippy"]
+
+[profile.bench]
+lto = true
+codegen-units = 1
+opt-level = 3
