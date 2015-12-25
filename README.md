@@ -40,3 +40,6 @@ test bench_cost_10      ... bench:  80,696,053 ns/iter (+/- 8,290,601)
 test bench_cost_default ... bench: 322,494,673 ns/iter (+/- 19,445,864)
 test bench_cost_14      ... bench: 1,295,103,136 ns/iter (+/- 83,242,618)
 ```
+
+## Acknowledgments
+This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the hash splitting and the null termination.
