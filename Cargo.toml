@@ -1,6 +1,6 @@
 [package]
 name = "bcrypt"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Vincent Prouillet <vincent@wearewizards.io>"]
 license = "MIT"
 readme = "README.md"
@@ -11,9 +11,9 @@ keywords = ["bcrypt", "password", "web", "hash"]
 
 [dependencies]
 clippy = {version = "0.0.32", optional = true}
-rust-crypto = "0.2.34"
+rust-crypto = "0.2.36"
 rand = "0.3"
-lazy_static = "0.1"
+lazy_static = "0.2"
 rustc-serialize = "0.3"
 
 [features]

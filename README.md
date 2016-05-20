@@ -43,3 +43,9 @@ test bench_cost_14      ... bench: 1,295,103,136 ns/iter (+/- 83,242,618)
 
 ## Acknowledgments
 This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the hash splitting and the null termination.
+
+
+## Changelog
+
+0.1.1: make BcryptResult, BcryptError public and update dependencies
+0.1.0: initial release
