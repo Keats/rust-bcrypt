@@ -19,7 +19,7 @@ use rand::{Rng, OsRng};
 mod b64;
 mod errors;
 
-use errors::{BcryptResult, BcryptError};
+pub use errors::{BcryptResult, BcryptError};
 
 
 // Cost constants
