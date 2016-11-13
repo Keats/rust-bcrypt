@@ -31,9 +31,9 @@ pub static DEFAULT_COST: u32 = 12;
 #[derive(Debug, PartialEq)]
 /// A bcrypt hash result before concatenating
 struct HashParts {
- cost: u32,
- salt: String,
- hash: String,
+    cost: u32,
+    salt: String,
+    hash: String,
 }
 
 impl HashParts {
@@ -48,7 +48,7 @@ impl HashParts {
 /// the cost to ensure it's a correct one
 fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
     if cost > MAX_COST || cost < MIN_COST {
-        return Err(BcryptError::InvalidCost);
+        return Err(BcryptError::InvalidCost(cost));
     }
 
     // Output is 24
@@ -70,7 +70,7 @@ fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashPa
     Ok(HashParts {
         cost: cost,
         salt: b64::encode(&salt),
-        hash: b64::encode(&output[..23]) // remember to remove the last byte
+        hash: b64::encode(&output[..23]), // remember to remove the last byte
     })
 }
 
@@ -80,30 +80,34 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     let mut parts = HashParts {
         cost: 0,
         salt: "".to_owned(),
-        hash: "".to_owned()
+        hash: "".to_owned(),
     };
 
     for (i, part) in hash.split('$').enumerate() {
         match i {
             0 => (),
-            1 => match part {
-                "2y" | "2b" | "2a" => (),
-                _ => { return Err(BcryptError::InvalidPrefix); }
-            },
+            1 => {
+                match part {
+                    "2y" | "2b" | "2a" => (),
+                    supplied => {
+                        return Err(BcryptError::InvalidPrefix(supplied.to_string()));
+                    }
+                }
+            }
             2 => {
                 if let Ok(c) = part.parse::<u32>() {
                     parts.cost = c;
                 } else {
                     ()
                 }
-            },
+            }
             3 => {
                 if part.len() == 53 {
                     parts.salt = part[..22].chars().collect();
                     parts.hash = part[22..].chars().collect();
                 }
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 
@@ -145,7 +149,7 @@ mod tests {
         let expected = HashParts {
             cost: 12,
             salt: "L6Bc/AlTQHyd9liGgGEZyO".to_owned(),
-            hash: "FLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u".to_owned()
+            hash: "FLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u".to_owned(),
         };
         assert_eq!(output, expected);
     }
