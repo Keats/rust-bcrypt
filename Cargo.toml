@@ -10,7 +10,7 @@ repository = "https://github.com/Keats/rust-bcrypt"
 keywords = ["bcrypt", "password", "web", "hash"]
 
 [dependencies]
-clippy = {version = "0.0.32", optional = true}
+clippy = {version = "0.0.98", optional = true}
 rust-crypto = "0.2.36"
 rand = "0.3"
 lazy_static = "0.2"

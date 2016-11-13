@@ -152,7 +152,7 @@ pub fn encode(words: &[u8]) -> String {
     let hash = words.to_base64(base64::STANDARD);
     let mut vec: Vec<String> = Vec::with_capacity(hash.len());
     for ch in hash.chars() {
-        vec.push(STANDARD_TO_BCRYPT.get(&ch).unwrap().clone().to_string());
+        vec.push(STANDARD_TO_BCRYPT.get(&ch).unwrap().to_string());
     }
 
     vec.concat().replace("=", "")
@@ -162,7 +162,7 @@ pub fn encode(words: &[u8]) -> String {
 pub fn decode(hash: &str) -> Vec<u8> {
     let mut vec: Vec<String> = Vec::with_capacity(hash.len());
     for ch in hash.chars() {
-        vec.push(BCRYPT_TO_STANDARD.get(&ch).unwrap().clone().to_string());
+        vec.push(BCRYPT_TO_STANDARD.get(&ch).unwrap().to_string());
     }
     // Bcrypt base64 has no padding but standard has
     // so we need to actually add padding ourselves

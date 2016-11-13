@@ -62,14 +62,14 @@ fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashPa
     };
     // Passwords need to be null terminated
     let mut vec = Vec::new();
-    vec.extend(pass);
+    vec.extend_from_slice(pass);
     vec.push(0);
 
-    bcrypt(cost, &salt, &vec, &mut output);
+    bcrypt(cost, salt, &vec, &mut output);
 
     Ok(HashParts {
         cost: cost,
-        salt: b64::encode(&salt),
+        salt: b64::encode(salt),
         hash: b64::encode(&output[..23]), // remember to remove the last byte
     })
 }
@@ -85,7 +85,6 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 
     for (i, part) in hash.split('$').enumerate() {
         match i {
-            0 => (),
             1 => {
                 match part {
                     "2y" | "2b" | "2a" => (),
@@ -157,25 +156,25 @@ mod tests {
     #[test]
     fn can_verify_hash_generated_from_some_online_tool() {
         let hash = "$2a$04$UuTkLRZZ6QofpDOlMz32MuuxEHA43WOemOYHPz6.SjsVsyO1tDU96";
-        assert!(verify("password", hash).unwrap() == true);
+        assert!(verify("password", hash).unwrap());
     }
 
     #[test]
     fn can_verify_hash_generated_from_python() {
         let hash = "$2b$04$EGdrhbKUv8Oc9vGiXX0HQOxSg445d458Muh7DAHskb6QbtCvdxcie";
-        assert!(verify("correctbatteryhorsestapler", hash).unwrap() == true);
+        assert!(verify("correctbatteryhorsestapler", hash).unwrap());
     }
 
     #[test]
     fn can_verify_hash_generated_from_node() {
         let hash = "$2a$04$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk5bektyVVa5xnIi";
-        assert!(verify("correctbatteryhorsestapler", hash).unwrap() == true);
+        assert!(verify("correctbatteryhorsestapler", hash).unwrap());
     }
 
     #[test]
     fn a_wrong_password_is_false() {
         let hash = "$2b$04$EGdrhbKUv8Oc9vGiXX0HQOxSg445d458Muh7DAHskb6QbtCvdxcie";
-        assert!(verify("wrong", hash).unwrap() == false);
+        assert!(!verify("wrong", hash).unwrap());
     }
 
     #[test]

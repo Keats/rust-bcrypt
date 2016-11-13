@@ -49,8 +49,7 @@ impl error::Error for BcryptError {
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             BcryptError::Io(ref err) => Some(err),
-            BcryptError::InvalidCost(_) => None,
-            BcryptError::InvalidPrefix(_) => None,
+            BcryptError::InvalidCost(_) | BcryptError::InvalidPrefix(_) => None,
         }
     }
 }
