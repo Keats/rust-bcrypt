@@ -47,6 +47,6 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
-0.1.3: Fix panic when password > 72 chars
-0.1.1: make BcryptResult, BcryptError public and update dependencies
-0.1.0: initial release
+* 0.1.3: Fix panic when password > 72 chars
+* 0.1.1: make BcryptResult, BcryptError public and update dependencies
+* 0.1.0: initial release
