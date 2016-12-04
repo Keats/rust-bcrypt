@@ -53,19 +53,20 @@ fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashPa
 
     // Output is 24
     let mut output = [0u8; 24];
-    // We only consider the first 72 chars so truncating if necessary
     let password_bytes: &[u8] = password.as_ref();
-    let pass = if password_bytes.len() > 72 {
-        &password_bytes[..72]
-    } else {
-        password_bytes
-    };
     // Passwords need to be null terminated
-    let mut vec = Vec::new();
-    vec.extend_from_slice(pass);
+    let mut vec: Vec<u8> = Vec::new();
+    vec.extend_from_slice(password_bytes);
     vec.push(0);
+    // We only consider the first 72 chars; truncate if neceessary.
+    // `bcrypt` below will panic if len > 72
+    let truncated = if vec.len() > 72 {
+        &vec[..72]
+    } else {
+        &vec
+    };
 
-    bcrypt(cost, salt, &vec, &mut output);
+    bcrypt(cost, salt, truncated, &mut output);
 
     Ok(HashParts {
         cost: cost,
@@ -139,6 +140,7 @@ pub fn verify(password: &str, hash: &str) -> BcryptResult<bool> {
 
 #[cfg(test)]
 mod tests {
+    use std::iter;
     use super::{hash, verify, HashParts, split_hash};
 
     #[test]
@@ -181,5 +183,12 @@ mod tests {
     fn can_verify_own_generated() {
         let hashed = hash("hunter2", 4).unwrap();
         assert_eq!(true, verify("hunter2", &hashed).unwrap());
+    }
+
+    #[test]
+    fn long_passwords_truncate_correctly() {
+        // produced with python -c 'import bcrypt; bcrypt.hashpw(b"x"*100, b"$2a$05$...............................")'
+        let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
+        assert!(verify(iter::repeat("x").take(100).collect::<String>().as_ref(), hash).unwrap());
     }
 }
