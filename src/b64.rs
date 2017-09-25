@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use rustc_serialize::base64::{self, FromBase64, ToBase64};
+use base64;
 
 
 // Decoding table from bcrypt base64 to standard base64 and standard -> bcrypt
@@ -149,7 +149,7 @@ lazy_static! {
 /// First encode to base64 standard and then replaces char with the bcrypt
 /// alphabet and removes the '=' chars
 pub fn encode(words: &[u8]) -> String {
-    let hash = words.to_base64(base64::STANDARD);
+    let hash = base64::encode(words);
     let mut vec: Vec<String> = Vec::with_capacity(hash.len());
     for ch in hash.chars() {
         vec.push(STANDARD_TO_BCRYPT.get(&ch).unwrap().to_string());
@@ -173,7 +173,7 @@ pub fn decode(hash: &str) -> Vec<u8> {
         }
     }
 
-    vec.concat().from_base64().unwrap()
+    base64::decode(&vec.concat()).unwrap()
 }
 
 #[cfg(test)]

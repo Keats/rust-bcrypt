@@ -1,15 +1,11 @@
 //! Easily hash and verify passwords using bcrypt
-//!
 
-#![cfg_attr(feature = "dev", allow(unstable_features))]
-#![cfg_attr(feature = "dev", feature(plugin))]
-#![cfg_attr(feature = "dev", plugin(clippy))]
 
 #[macro_use]
 extern crate lazy_static;
 extern crate crypto;
 extern crate rand;
-extern crate rustc_serialize;
+extern crate base64;
 
 
 use crypto::bcrypt::bcrypt;
