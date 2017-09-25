@@ -17,15 +17,9 @@ extern crate bcrypt;
 
 use bcrypt::{DEFAULT_COST, hash, verify};
 
-let hashed = match hash("hunter2", DEFAULT_COST) {
-    Ok(h) => h,
-    Err(_) => panic!()
-};
+let hashed = hash("hunter2", DEFAULT_COST)?;
 
-let valid = match verify("hunter2", &hashed) {
-    Ok(valid) => valid,
-    Err(_) => panic!()
-};
+let valid = verify("hunter2", &hashed)?;
 ```
 
 The cost needs to be an integer between 4 and 31 (see benchmarks to have an idea of the speed for each), the `DEFAULT_COST` is 12.
