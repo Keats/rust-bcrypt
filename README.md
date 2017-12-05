@@ -41,6 +41,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.1.5: update lazy-static to 1.0
 * 0.1.4: Replace rustc-serialize dependency with bcrypt
 * 0.1.3: Fix panic when password > 72 chars
 * 0.1.1: make BcryptResult, BcryptError public and update dependencies

@@ -13,4 +13,4 @@ keywords = ["bcrypt", "password", "web", "hash"]
 rust-crypto = "0.2.36"
 rand = "0.3"
 lazy_static = "1"
-base64 = "0.7"
+base64 = "0.8"
