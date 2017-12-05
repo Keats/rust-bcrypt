@@ -1,6 +1,6 @@
 [package]
 name = "bcrypt"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Vincent Prouillet <vincent@wearewizards.io>"]
 license = "MIT"
 readme = "README.md"
@@ -12,5 +12,5 @@ keywords = ["bcrypt", "password", "web", "hash"]
 [dependencies]
 rust-crypto = "0.2.36"
 rand = "0.3"
-lazy_static = "0.2"
+lazy_static = "1"
 base64 = "0.7"
