@@ -1,8 +1,8 @@
 #![feature(test)]
-extern crate test;
 extern crate bcrypt;
+extern crate test;
 
-use bcrypt::{DEFAULT_COST, hash};
+use bcrypt::{hash, DEFAULT_COST};
 
 #[bench]
 fn bench_cost_4(b: &mut test::Bencher) {
