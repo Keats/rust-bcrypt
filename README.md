@@ -30,10 +30,10 @@ Here are some benchmarks on my 4 years old laptop to give you some ideas on the 
 Note that I don't go above 14 as it takes too long.
 
 ```
-test bench_cost_10      ... bench:  73,629,975 ns/iter (+/- 4,439,106)
-test bench_cost_14      ... bench: 1,185,802,788 ns/iter (+/- 37,571,986)
 test bench_cost_4       ... bench:   1,197,414 ns/iter (+/- 112,856)
+test bench_cost_10      ... bench:  73,629,975 ns/iter (+/- 4,439,106)
 test bench_cost_default ... bench: 319,749,671 ns/iter (+/- 29,216,326)
+test bench_cost_14      ... bench: 1,185,802,788 ns/iter (+/- 37,571,986)
 ```
 
 ## Acknowledgments
