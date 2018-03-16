@@ -3,17 +3,16 @@
 
 #[macro_use]
 extern crate lazy_static;
-extern crate crypto;
+extern crate blowfish;
 extern crate rand;
 extern crate base64;
+extern crate byte_tools;
 
-
-use crypto::bcrypt::bcrypt;
-use crypto::util::fixed_time_eq;
 use rand::{Rng, OsRng};
 
 mod b64;
 mod errors;
+mod bcrypt;
 
 pub use errors::{BcryptResult, BcryptError};
 
@@ -62,7 +61,7 @@ fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashPa
         &vec
     };
 
-    bcrypt(cost, salt, truncated, &mut output);
+    bcrypt::bcrypt(cost, salt, truncated, &mut output);
 
     Ok(HashParts {
         cost: cost,
@@ -130,7 +129,7 @@ pub fn verify(password: &str, hash: &str) -> BcryptResult<bool> {
     let salt = b64::decode(&parts.salt);
     let generated = try!(_hash_password(password, parts.cost, &salt));
 
-    Ok(fixed_time_eq(&b64::decode(&parts.hash), &b64::decode(&generated.hash)))
+    Ok(&b64::decode(&parts.hash) == &b64::decode(&generated.hash))
 }
 
 
