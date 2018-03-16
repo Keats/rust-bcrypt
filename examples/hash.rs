@@ -1,16 +1,9 @@
 extern crate bcrypt;
 
-use bcrypt::{DEFAULT_COST, hash, verify};
+use bcrypt::{hash, verify, DEFAULT_COST};
 
 fn main() {
-    let hashed = match hash("hunter2", DEFAULT_COST) {
-        Ok(h) => h,
-        Err(_) => panic!()
-    };
-
-    let valid = match verify("hunter2", &hashed) {
-        Ok(valid) => valid,
-        Err(_) => panic!()
-    };
+    let hashed = hash("hunter2", DEFAULT_COST).unwrap();
+    let valid = verify("hunter2", &hashed).unwrap();
     println!("{:?}", valid);
 }

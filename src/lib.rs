@@ -1,27 +1,24 @@
 //! Easily hash and verify passwords using bcrypt
 
-
 #[macro_use]
 extern crate lazy_static;
-extern crate blowfish;
-extern crate rand;
 extern crate base64;
+extern crate blowfish;
 extern crate byte_tools;
+extern crate rand;
 
-use rand::{Rng, OsRng};
+use rand::{OsRng, Rng};
 
 mod b64;
 mod errors;
 mod bcrypt;
 
-pub use errors::{BcryptResult, BcryptError};
-
+pub use errors::{BcryptError, BcryptResult};
 
 // Cost constants
 static MIN_COST: u32 = 4;
 static MAX_COST: u32 = 31;
 pub static DEFAULT_COST: u32 = 12;
-
 
 #[derive(Debug, PartialEq)]
 /// A bcrypt hash result before concatenating
@@ -43,7 +40,7 @@ impl HashParts {
 /// the cost to ensure it's a correct one
 fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
     if cost > MAX_COST || cost < MIN_COST {
-        return Err(BcryptError::InvalidCost(cost));
+        return Err(BcryptError::CostNotAllowed(cost));
     }
 
     // Output is 24
@@ -53,18 +50,14 @@ fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashPa
     let mut vec: Vec<u8> = Vec::new();
     vec.extend_from_slice(password_bytes);
     vec.push(0);
-    // We only consider the first 72 chars; truncate if neceessary.
+    // We only consider the first 72 chars; truncate if necessary.
     // `bcrypt` below will panic if len > 72
-    let truncated = if vec.len() > 72 {
-        &vec[..72]
-    } else {
-        &vec
-    };
+    let truncated = if vec.len() > 72 { &vec[..72] } else { &vec };
 
     bcrypt::bcrypt(cost, salt, truncated, &mut output);
 
     Ok(HashParts {
-        cost: cost,
+        cost,
         salt: b64::encode(salt),
         hash: b64::encode(&output[..23]), // remember to remove the last byte
     })
@@ -75,35 +68,32 @@ fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashPa
 fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     let mut parts = HashParts {
         cost: 0,
-        salt: "".to_owned(),
-        hash: "".to_owned(),
+        salt: "".to_string(),
+        hash: "".to_string(),
     };
 
-    for (i, part) in hash.split('$').enumerate() {
-        match i {
-            1 => {
-                match part {
-                    "2y" | "2b" | "2a" => (),
-                    supplied => {
-                        return Err(BcryptError::InvalidPrefix(supplied.to_string()));
-                    }
-                }
-            }
-            2 => {
-                if let Ok(c) = part.parse::<u32>() {
-                    parts.cost = c;
-                } else {
-                    ()
-                }
-            }
-            3 => {
-                if part.len() == 53 {
-                    parts.salt = part[..22].chars().collect();
-                    parts.hash = part[22..].chars().collect();
-                }
-            }
-            _ => (),
-        }
+    // Should be [prefix, cost, hash]
+    let raw_parts: Vec<_> = hash.split('$').filter(|s| !s.is_empty()).collect();
+
+    if raw_parts.len() != 3 {
+        return Err(BcryptError::InvalidHash(hash.to_string()));
+    }
+
+    if raw_parts[0] != "2y" && raw_parts[0] != "2b" && raw_parts[0] != "2a" {
+        return Err(BcryptError::InvalidPrefix(raw_parts[0].to_string()));
+    }
+
+    if let Ok(c) = raw_parts[1].parse::<u32>() {
+        parts.cost = c;
+    } else {
+        return Err(BcryptError::InvalidCost(raw_parts[1].to_string()));
+    }
+
+    if raw_parts[2].len() == 53 {
+        parts.salt = raw_parts[2][..22].chars().collect();
+        parts.hash = raw_parts[2][22..].chars().collect();
+    } else {
+        return Err(BcryptError::InvalidHash(hash.to_string()));
     }
 
     Ok(parts)
@@ -114,29 +104,28 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 pub fn hash(password: &str, cost: u32) -> BcryptResult<String> {
     let salt = {
         let mut s = [0u8; 16];
-        let mut rng = try!(OsRng::new());
+        let mut rng = OsRng::new()?;
         rng.fill_bytes(&mut s);
         s
     };
-    let hash_parts = try!(_hash_password(password, cost, &salt));
+    let hash_parts = _hash_password(password, cost, &salt)?;
 
     Ok(hash_parts.format())
 }
 
 /// Verify that a password is equivalent to the hash provided
 pub fn verify(password: &str, hash: &str) -> BcryptResult<bool> {
-    let parts = try!(split_hash(hash));
-    let salt = b64::decode(&parts.salt);
-    let generated = try!(_hash_password(password, parts.cost, &salt));
+    let parts = split_hash(hash)?;
+    let salt = b64::decode(&parts.salt)?;
+    let generated = _hash_password(password, parts.cost, &salt)?;
 
-    Ok(&b64::decode(&parts.hash) == &b64::decode(&generated.hash))
+    Ok(b64::decode(&parts.hash)? == b64::decode(&generated.hash)?)
 }
-
 
 #[cfg(test)]
 mod tests {
     use std::iter;
-    use super::{hash, verify, HashParts, split_hash};
+    use super::{hash, split_hash, verify, HashParts};
 
     #[test]
     fn can_split_hash() {
@@ -144,8 +133,8 @@ mod tests {
         let output = split_hash(hash).unwrap();
         let expected = HashParts {
             cost: 12,
-            salt: "L6Bc/AlTQHyd9liGgGEZyO".to_owned(),
-            hash: "FLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u".to_owned(),
+            salt: "L6Bc/AlTQHyd9liGgGEZyO".to_string(),
+            hash: "FLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u".to_string(),
         };
         assert_eq!(output, expected);
     }
@@ -175,6 +164,27 @@ mod tests {
     }
 
     #[test]
+    fn errors_with_invalid_hash() {
+        // there is another $ in the hash part
+        let hash = "$2a$04$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk$5bektyVVa5xnIi";
+        assert!(verify("correctbatteryhorsestapler", hash).is_err());
+    }
+
+    #[test]
+    fn errors_with_non_number_cost() {
+        // the cost is not a number
+        let hash = "$2a$ab$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk$5bektyVVa5xnIi";
+        assert!(verify("correctbatteryhorsestapler", hash).is_err());
+    }
+
+    #[test]
+    fn errors_with_a_hash_too_long() {
+        // the cost is not a number
+        let hash = "$2a$04$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk$5bektyVVa5xnIerererereri";
+        assert!(verify("correctbatteryhorsestapler", hash).is_err());
+    }
+
+    #[test]
     fn can_verify_own_generated() {
         let hashed = hash("hunter2", 4).unwrap();
         assert_eq!(true, verify("hunter2", &hashed).unwrap());
@@ -184,6 +194,11 @@ mod tests {
     fn long_passwords_truncate_correctly() {
         // produced with python -c 'import bcrypt; bcrypt.hashpw(b"x"*100, b"$2a$05$...............................")'
         let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
-        assert!(verify(iter::repeat("x").take(100).collect::<String>().as_ref(), hash).unwrap());
+        assert!(
+            verify(
+                iter::repeat("x").take(100).collect::<String>().as_ref(),
+                hash
+            ).unwrap()
+        );
     }
 }
