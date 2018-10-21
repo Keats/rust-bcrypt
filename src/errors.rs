@@ -1,6 +1,7 @@
 use std::error;
 use std::fmt;
 use std::io;
+use rand;
 
 /// Library generic result type.
 pub type BcryptResult<T> = Result<T, BcryptError>;
@@ -15,6 +16,7 @@ pub enum BcryptError {
     InvalidPrefix(String),
     InvalidHash(String),
     InvalidBase64(char, String),
+    Rand(rand::Error)
 }
 
 macro_rules! impl_from_error {
@@ -28,6 +30,7 @@ macro_rules! impl_from_error {
 }
 
 impl_from_error!(io::Error, BcryptError::Io);
+impl_from_error!(rand::Error, BcryptError::Rand);
 
 impl fmt::Display for BcryptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -40,6 +43,7 @@ impl fmt::Display for BcryptError {
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
             BcryptError::InvalidHash(ref hash) => write!(f, "Invalid hash: {}", hash),
             BcryptError::InvalidBase64(ref c, ref hash) => write!(f, "Invalid base64 char {} in {}", c, hash),
+            BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
         }
     }
 }
@@ -53,6 +57,7 @@ impl error::Error for BcryptError {
             BcryptError::InvalidPrefix(_) => "Invalid Prefix",
             BcryptError::InvalidHash(_) => "Invalid hash",
             BcryptError::InvalidBase64(_, _) => "Invalid base64 char",
+            BcryptError::Rand(ref err) => err.description(),
         }
     }
 
@@ -64,6 +69,7 @@ impl error::Error for BcryptError {
             | BcryptError::InvalidPrefix(_)
             | BcryptError::InvalidBase64(_, _)
             | BcryptError::InvalidHash(_) => None,
+            BcryptError::Rand(ref err) => Some(err),
         }
     }
 }
