@@ -41,6 +41,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.2.1: update rand
 * 0.2.0: replace rust-crypto with blowfish, use some more modern Rust things like `?` and handle more errors
 * 0.1.6: update rand and base64 deps
 * 0.1.5: update lazy-static to 1.0
