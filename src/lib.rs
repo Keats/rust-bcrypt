@@ -7,7 +7,7 @@ extern crate blowfish;
 extern crate byte_tools;
 extern crate rand;
 
-use rand::{OsRng, Rng};
+use rand::{RngCore, OsRng};
 
 mod b64;
 mod errors;
