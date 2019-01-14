@@ -1,6 +1,6 @@
 [package]
 name = "bcrypt"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
 readme = "README.md"
@@ -11,7 +11,7 @@ keywords = ["bcrypt", "password", "web", "hash"]
 
 [dependencies]
 blowfish = { version = "0.3", features = ["bcrypt"] }
-rand = "0.5"
+rand = "0.6"
 lazy_static = "1"
 base64 = "0.9"
 byte-tools = "0.2"
