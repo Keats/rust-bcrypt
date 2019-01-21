@@ -7,6 +7,7 @@ extern crate blowfish;
 extern crate byte_tools;
 extern crate rand;
 
+use std::convert::AsRef;
 use rand::{RngCore, OsRng};
 
 mod b64;
@@ -38,17 +39,19 @@ impl HashParts {
 
 /// The main meat: actually does the hashing and does some verification with
 /// the cost to ensure it's a correct one
-fn _hash_password(password: &str, cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
+fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
     if cost > MAX_COST || cost < MIN_COST {
         return Err(BcryptError::CostNotAllowed(cost));
+    }
+    if password.contains(&0u8) {
+        return Err(BcryptError::InvalidPassword);
     }
 
     // Output is 24
     let mut output = [0u8; 24];
-    let password_bytes: &[u8] = password.as_ref();
     // Passwords need to be null terminated
     let mut vec: Vec<u8> = Vec::new();
-    vec.extend_from_slice(password_bytes);
+    vec.extend_from_slice(password);
     vec.push(0);
     // We only consider the first 72 chars; truncate if necessary.
     // `bcrypt` below will panic if len > 72
@@ -101,23 +104,23 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 
 /// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness
-pub fn hash(password: &str, cost: u32) -> BcryptResult<String> {
+pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
     let salt = {
         let mut s = [0u8; 16];
         let mut rng = OsRng::new()?;
         rng.fill_bytes(&mut s);
         s
     };
-    let hash_parts = _hash_password(password, cost, &salt)?;
+    let hash_parts = _hash_password(password.as_ref(), cost, &salt)?;
 
     Ok(hash_parts.format())
 }
 
 /// Verify that a password is equivalent to the hash provided
-pub fn verify(password: &str, hash: &str) -> BcryptResult<bool> {
+pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     let parts = split_hash(hash)?;
     let salt = b64::decode(&parts.salt)?;
-    let generated = _hash_password(password, parts.cost, &salt)?;
+    let generated = _hash_password(password.as_ref(), parts.cost, &salt)?;
 
     Ok(b64::decode(&parts.hash)? == b64::decode(&generated.hash)?)
 }
@@ -125,7 +128,7 @@ pub fn verify(password: &str, hash: &str) -> BcryptResult<bool> {
 #[cfg(test)]
 mod tests {
     use std::iter;
-    use super::{hash, split_hash, verify, HashParts};
+    use super::{hash, split_hash, verify, HashParts, DEFAULT_COST, BcryptError};
 
     #[test]
     fn can_split_hash() {
@@ -196,9 +199,25 @@ mod tests {
         let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
         assert!(
             verify(
-                iter::repeat("x").take(100).collect::<String>().as_ref(),
+                iter::repeat("x").take(100).collect::<String>(),
                 hash
             ).unwrap()
         );
+    }
+
+    #[test]
+    fn forbid_null_bytes() {
+        fn assert_invalid_password(password: &[u8]) {
+            match hash(password, DEFAULT_COST) {
+                Ok(_) => panic!(format!("NULL bytes must be forbidden, but {:?} is allowed.", password)),
+                Err(BcryptError::InvalidPassword) => {},
+                Err(e) => panic!(format!("NULL bytes are forbidden but error differs: {} for {:?}.", e, password)),
+            }
+        }
+        assert_invalid_password("\0".as_bytes());
+        assert_invalid_password("\0\0\0\0\0\0\0\0".as_bytes());
+        assert_invalid_password("passw0rd\0".as_bytes());
+        assert_invalid_password("passw0rd\0with tail".as_bytes());
+        assert_invalid_password("\0passw0rd".as_bytes());
     }
 }
