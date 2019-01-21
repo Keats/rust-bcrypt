@@ -4,11 +4,11 @@
 extern crate lazy_static;
 extern crate base64;
 extern crate blowfish;
-extern crate byte_tools;
+extern crate byteorder;
 extern crate rand;
 
 use std::convert::AsRef;
-use rand::{RngCore, OsRng};
+use rand::{RngCore, rngs::OsRng};
 
 mod b64;
 mod errors;

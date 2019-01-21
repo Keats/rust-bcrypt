@@ -10,8 +10,8 @@ repository = "https://github.com/Keats/rust-bcrypt"
 keywords = ["bcrypt", "password", "web", "hash"]
 
 [dependencies]
-blowfish = { version = "0.3", features = ["bcrypt"] }
+blowfish = { version = "0.4", features = ["bcrypt"] }
 rand = "0.6"
 lazy_static = "1"
-base64 = "0.9"
-byte-tools = "0.2"
+base64 = "0.10"
+byteorder = "1"
