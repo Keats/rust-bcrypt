@@ -7,8 +7,10 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.2"
+bcrypt = "0.3"
 ```
+
+The minimum Rust version is 1.25
 
 ## Usage
 The crate makes 3 things public: `DEFAULT_COST`, `hash`, `verify`.
@@ -41,6 +43,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.3.0: forbid NULL bytes in passwords & update dependencies
 * 0.2.2: update rand
 * 0.2.1: update rand
 * 0.2.0: replace rust-crypto with blowfish, use some more modern Rust things like `?` and handle more errors
