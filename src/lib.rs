@@ -17,9 +17,9 @@ mod bcrypt;
 pub use errors::{BcryptError, BcryptResult};
 
 // Cost constants
-static MIN_COST: u32 = 4;
-static MAX_COST: u32 = 31;
-pub static DEFAULT_COST: u32 = 12;
+const MIN_COST: u32 = 4;
+const MAX_COST: u32 = 31;
+pub const DEFAULT_COST: u32 = 12;
 
 #[derive(Debug, PartialEq)]
 /// A bcrypt hash result before concatenating
