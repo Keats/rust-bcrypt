@@ -121,8 +121,19 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     let parts = split_hash(hash)?;
     let salt = b64::decode(&parts.salt)?;
     let generated = _hash_password(password.as_ref(), parts.cost, &salt)?;
+    let source_decoded = b64::decode(&parts.hash)?;
+    let generated_decoded = b64::decode(&generated.hash)?;
+    if source_decoded.len() != generated_decoded.len() {
+        return Ok(false);
+    }
 
-    Ok(b64::decode(&parts.hash)? == b64::decode(&generated.hash)?)
+    for (a, b) in source_decoded.into_iter().zip(generated_decoded) {
+        if a != b {
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
 }
 
 #[cfg(test)]
