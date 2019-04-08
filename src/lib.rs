@@ -15,6 +15,7 @@ mod errors;
 mod bcrypt;
 
 pub use errors::{BcryptError, BcryptResult};
+pub use bcrypt::bcrypt;
 
 // Cost constants
 const MIN_COST: u32 = 4;
