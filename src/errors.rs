@@ -6,7 +6,7 @@ use rand;
 /// Library generic result type.
 pub type BcryptResult<T> = Result<T, BcryptError>;
 
-#[derive(Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 /// All the errors we can encounter while hashing/verifying
 /// passwords
 pub enum BcryptError {
