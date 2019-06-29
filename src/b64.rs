@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use base64;
 
-use errors::{BcryptError, BcryptResult};
+use crate::errors::{BcryptError, BcryptResult};
 
 // Decoding table from bcrypt base64 to standard base64 and standard -> bcrypt
 // Bcrypt has its own base64 alphabet

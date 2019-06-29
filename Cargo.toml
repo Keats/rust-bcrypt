@@ -1,6 +1,6 @@
 [package]
 name = "bcrypt"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
 readme = "README.md"
@@ -8,6 +8,7 @@ description = "Easily hash and verify passwords using bcrypt"
 homepage = "https://github.com/Keats/rust-bcrypt"
 repository = "https://github.com/Keats/rust-bcrypt"
 keywords = ["bcrypt", "password", "web", "hash"]
+edition = "2018"
 
 [dependencies]
 blowfish = { version = "0.4", features = ["bcrypt"] }

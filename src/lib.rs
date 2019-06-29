@@ -14,8 +14,8 @@ mod b64;
 mod errors;
 mod bcrypt;
 
-pub use errors::{BcryptError, BcryptResult};
-pub use bcrypt::bcrypt;
+pub use crate::errors::{BcryptError, BcryptResult};
+pub use crate::bcrypt::bcrypt;
 
 // Cost constants
 const MIN_COST: u32 = 4;
@@ -108,8 +108,7 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
     let salt = {
         let mut s = [0u8; 16];
-        let mut rng = OsRng::new()?;
-        rng.fill_bytes(&mut s);
+        OsRng.fill_bytes(&mut s);
         s
     };
     let hash_parts = _hash_password(password.as_ref(), cost, &salt)?;

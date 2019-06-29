@@ -39,7 +39,7 @@ impl fmt::Display for BcryptError {
             BcryptError::Io(ref err) => write!(f, "IO error: {}", err),
             BcryptError::InvalidCost(ref cost) => write!(f, "Invalid Cost: {}", cost),
             BcryptError::CostNotAllowed(ref cost) => {
-                write!(f, "Cost needs to be between {} and {}, got {}", ::MIN_COST, ::MAX_COST, cost)
+                write!(f, "Cost needs to be between {} and {}, got {}", crate::MIN_COST, crate::MAX_COST, cost)
             },
             BcryptError::InvalidPassword => write!(f, "Invalid password: contains NULL byte"),
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
