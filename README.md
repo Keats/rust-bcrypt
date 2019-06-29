@@ -43,6 +43,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.4.1: expose the inner `bcrypt` function
 * 0.4.0: make DEFAULT_COST const instead of static
 * 0.3.0: forbid NULL bytes in passwords & update dependencies
 * 0.2.2: update rand
