@@ -1,7 +1,7 @@
+use rand;
 use std::error;
 use std::fmt;
 use std::io;
-use rand;
 
 /// Library generic result type.
 pub type BcryptResult<T> = Result<T, BcryptError>;
@@ -17,7 +17,7 @@ pub enum BcryptError {
     InvalidPrefix(String),
     InvalidHash(String),
     InvalidBase64(char, String),
-    Rand(rand::Error)
+    Rand(rand::Error),
 }
 
 macro_rules! impl_from_error {
@@ -38,13 +38,19 @@ impl fmt::Display for BcryptError {
         match *self {
             BcryptError::Io(ref err) => write!(f, "IO error: {}", err),
             BcryptError::InvalidCost(ref cost) => write!(f, "Invalid Cost: {}", cost),
-            BcryptError::CostNotAllowed(ref cost) => {
-                write!(f, "Cost needs to be between {} and {}, got {}", crate::MIN_COST, crate::MAX_COST, cost)
-            },
+            BcryptError::CostNotAllowed(ref cost) => write!(
+                f,
+                "Cost needs to be between {} and {}, got {}",
+                crate::MIN_COST,
+                crate::MAX_COST,
+                cost
+            ),
             BcryptError::InvalidPassword => write!(f, "Invalid password: contains NULL byte"),
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
             BcryptError::InvalidHash(ref hash) => write!(f, "Invalid hash: {}", hash),
-            BcryptError::InvalidBase64(ref c, ref hash) => write!(f, "Invalid base64 char {} in {}", c, hash),
+            BcryptError::InvalidBase64(ref c, ref hash) => {
+                write!(f, "Invalid base64 char {} in {}", c, hash)
+            }
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
         }
     }
