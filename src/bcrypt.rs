@@ -1,5 +1,5 @@
 use blowfish::Blowfish;
-use byteorder::{BE, ByteOrder};
+use byteorder::{ByteOrder, BE};
 
 fn setup(cost: u32, salt: &[u8], key: &[u8]) -> Blowfish {
     assert!(cost < 32);
@@ -22,7 +22,7 @@ pub fn bcrypt(cost: u32, salt: &[u8], password: &[u8], output: &mut [u8]) {
     let state = setup(cost, salt, password);
     // OrpheanBeholderScryDoubt
     let mut ctext = [
-        0x4f727068, 0x65616e42, 0x65686f6c, 0x64657253, 0x63727944, 0x6f756274
+        0x4f727068, 0x65616e42, 0x65686f6c, 0x64657253, 0x63727944, 0x6f756274,
     ];
     for i in 0..3 {
         let i: usize = i * 2;
