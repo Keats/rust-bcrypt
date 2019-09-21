@@ -180,7 +180,8 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 
 #[cfg(test)]
 mod tests {
-    use super::{hash, _hash_password, split_hash, verify, BcryptError, HashParts, DEFAULT_COST, Version};
+    use super::{hash, _hash_password, split_hash, verify, BcryptError, BcryptResult, HashParts, DEFAULT_COST};
+    use quickcheck::{quickcheck, TestResult};
     use std::iter;
 
     #[test]
@@ -286,5 +287,26 @@ mod tests {
         assert_invalid_password("passw0rd\0".as_bytes());
         assert_invalid_password("passw0rd\0with tail".as_bytes());
         assert_invalid_password("\0passw0rd".as_bytes());
+    }
+
+    quickcheck! {
+        fn can_verify_arbitrary_own_generated(pass: Vec<u8>) -> BcryptResult<bool> {
+            let mut pass = pass;
+            pass.retain(|&b| b != 0);
+            let hashed = hash(&pass, 4)?;
+            verify(pass, &hashed)
+        }
+
+        fn doesnt_verify_different_passwords(a: Vec<u8>, b: Vec<u8>) -> BcryptResult<TestResult> {
+            let mut a = a;
+            a.retain(|&b| b != 0);
+            let mut b = b;
+            b.retain(|&b| b != 0);
+            if a == b {
+                return Ok(TestResult::discard());
+            }
+            let hashed = hash(a, 4)?;
+            Ok(TestResult::from_bool(!verify(b, &hashed)?))
+        }
     }
 }
