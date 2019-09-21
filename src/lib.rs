@@ -1,12 +1,4 @@
 //! Easily hash and verify passwords using bcrypt
-
-#[macro_use]
-extern crate lazy_static;
-extern crate base64;
-extern crate blowfish;
-extern crate byteorder;
-extern crate rand;
-
 use rand::{rngs::OsRng, RngCore};
 use std::convert::AsRef;
 use std::fmt;
@@ -32,6 +24,7 @@ pub struct HashParts {
 }
 
 /// BCrypt hash version
+/// https://en.wikipedia.org/wiki/Bcrypt#Versioning_history
 pub enum Version {
     TwoA,
     TwoX,
@@ -40,13 +33,13 @@ pub enum Version {
 }
 
 impl HashParts {
-    /// Creates the bcrypt hash string from all its part
+    /// Creates the bcrypt hash string from all its parts
     fn format(self) -> String {
-        self.format_for_version(Version::TwoY)
+        self.format_for_version(Version::TwoB)
     }
 
     /// Creates the bcrypt hash string from all its part, allowing to customize the version.
-    fn format_for_version(&self, version:Version)->String {
+    fn format_for_version(&self, version: Version) -> String {
         // Cost need to have a length of 2 so padding with a 0 if cost < 10
         format!("${}${:02}${}{}", version, self.cost, self.salt, self.hash)
     }
@@ -138,17 +131,13 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 /// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness
 pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
-
-    hash_with_result(password, cost)
-        .map(|r|r.format())
-
+    hash_with_result(password, cost).map(|r| r.format())
 }
 
 /// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness.
 /// The function returns a result structure and allows to format the hash in different versions.
 pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<HashParts> {
-
     let salt = {
         let mut s = [0u8; 16];
         OsRng.fill_bytes(&mut s);
@@ -180,7 +169,10 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 
 #[cfg(test)]
 mod tests {
-    use super::{hash, _hash_password, split_hash, verify, BcryptError, BcryptResult, HashParts, DEFAULT_COST};
+    use super::{
+        _hash_password, hash, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
+        DEFAULT_COST,
+    };
     use quickcheck::{quickcheck, TestResult};
     use std::iter;
 
@@ -257,12 +249,24 @@ mod tests {
     #[test]
     fn generate_versions() {
         let password = "hunter2".as_bytes();
-        let salt = vec![0;16];
+        let salt = vec![0; 16];
         let result = _hash_password(password, DEFAULT_COST, salt.as_slice()).unwrap();
-        assert_eq!("$2a$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm", result.format_for_version(Version::TwoA));
-        assert_eq!("$2b$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm", result.format_for_version(Version::TwoB));
-        assert_eq!("$2x$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm", result.format_for_version(Version::TwoX));
-        assert_eq!("$2y$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm", result.format_for_version(Version::TwoY));
+        assert_eq!(
+            "$2a$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm",
+            result.format_for_version(Version::TwoA)
+        );
+        assert_eq!(
+            "$2b$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm",
+            result.format_for_version(Version::TwoB)
+        );
+        assert_eq!(
+            "$2x$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm",
+            result.format_for_version(Version::TwoX)
+        );
+        assert_eq!(
+            "$2y$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm",
+            result.format_for_version(Version::TwoY)
+        );
         let hash = result.to_string();
         assert_eq!(true, verify("hunter2", &hash).unwrap());
     }
