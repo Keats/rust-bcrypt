@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use base64;
+use lazy_static::lazy_static;
 
 use crate::errors::{BcryptError, BcryptResult};
 
@@ -184,7 +185,7 @@ pub fn decode(hash: &str) -> BcryptResult<Vec<u8>> {
         }
     }
 
-    // if we had non standard chars, it would have errored before
+    // safe unwrap: if we had non standard chars, it would have errored before
     Ok(base64::decode(&res).unwrap())
 }
 

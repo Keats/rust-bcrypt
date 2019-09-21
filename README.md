@@ -43,6 +43,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.6.0: allow users to choose the bcrypt version and default to 2b instead of 2y
 * 0.5.0: expose the inner `bcrypt` function + edition 2018
 * 0.4.0: make DEFAULT_COST const instead of static
 * 0.3.0: forbid NULL bytes in passwords & update dependencies
