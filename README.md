@@ -10,7 +10,7 @@ Add the following to Cargo.toml:
 bcrypt = "0.6"
 ```
 
-The minimum Rust version is 1.32.0
+The minimum Rust version is 1.34.0
 
 ## Usage
 The crate makes 3 things public: `DEFAULT_COST`, `hash`, `verify`.
@@ -43,6 +43,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.7.0: update base64 to 0.11
 * 0.6.0: allow users to choose the bcrypt version and default to 2b instead of 2y
 * 0.5.0: expose the inner `bcrypt` function + edition 2018
 * 0.4.0: make DEFAULT_COST const instead of static
