@@ -144,7 +144,13 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
         s
     };
 
-    _hash_password(password.as_ref(), cost, salt.as_ref())
+    hash_with_salt(password.as_ref(), cost, salt.as_ref())
+}
+
+/// Generates a password given a hash and a cost.
+/// The function returns a result structure and allows to format the hash in different versions.
+pub fn hash_with_salt<P: AsRef<[u8]>>(password: P, cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
+    _hash_password(password.as_ref(), cost, salt)
 }
 
 /// Verify that a password is equivalent to the hash provided
@@ -170,7 +176,7 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 #[cfg(test)]
 mod tests {
     use super::{
-        _hash_password, hash, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
+        _hash_password, hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
         DEFAULT_COST,
     };
     use quickcheck::{quickcheck, TestResult};
@@ -291,6 +297,14 @@ mod tests {
         assert_invalid_password("passw0rd\0".as_bytes());
         assert_invalid_password("passw0rd\0with tail".as_bytes());
         assert_invalid_password("\0passw0rd".as_bytes());
+    }
+
+    #[test]
+    fn hash_with_fixed_salt() {
+        let salt = vec![38, 113, 212, 141, 108, 213, 195, 166,
+                        201, 38, 20, 13, 47, 40, 104, 18];
+        let hashed = hash_with_salt("My S3cre7 P@55w0rd!", 5, &salt).unwrap().to_string();
+        assert_eq!("$2y$05$HlFShUxTu4ZHHfOLJwfmCeDj/kuKFKboanXtDJXxCC7aIPTUgxNDe", &hashed);
     }
 
     quickcheck! {
