@@ -14,7 +14,7 @@ edition = "2018"
 blowfish = { version = "0.4", features = ["bcrypt"] }
 rand = "0.7"
 lazy_static = "1"
-base64 = "0.11"
+base64 = "0.12"
 byteorder = "1"
 
 [dev-dependencies]
