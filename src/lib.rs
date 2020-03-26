@@ -144,7 +144,7 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
         s
     };
 
-    hash_with_salt(password.as_ref(), cost, salt.as_ref())
+    _hash_password(password.as_ref(), cost, salt.as_ref())
 }
 
 /// Generates a password given a hash and a cost.
