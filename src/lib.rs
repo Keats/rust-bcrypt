@@ -39,7 +39,7 @@ impl HashParts {
     }
 
     /// Creates the bcrypt hash string from all its part, allowing to customize the version.
-    fn format_for_version(&self, version: Version) -> String {
+    pub fn format_for_version(&self, version: Version) -> String {
         // Cost need to have a length of 2 so padding with a 0 if cost < 10
         format!("${}${:02}${}{}", version, self.cost, self.salt, self.hash)
     }
