@@ -2,6 +2,7 @@
 use rand::{rngs::OsRng, RngCore};
 use std::convert::AsRef;
 use std::fmt;
+use std::str::FromStr;
 
 mod b64;
 mod bcrypt;
@@ -38,10 +39,28 @@ impl HashParts {
         self.format_for_version(Version::TwoB)
     }
 
+    /// Get the bcrypt hash cost
+    pub fn get_cost(&self) -> u32 {
+        self.cost
+    }
+
+    /// Get the bcrypt hash salt
+    pub fn get_salt(&self) -> String {
+        self.salt.clone()
+    }
+
     /// Creates the bcrypt hash string from all its part, allowing to customize the version.
     pub fn format_for_version(&self, version: Version) -> String {
         // Cost need to have a length of 2 so padding with a 0 if cost < 10
         format!("${}${:02}${}{}", version, self.cost, self.salt, self.hash)
+    }
+}
+
+impl FromStr for HashParts {
+    type Err = BcryptError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        split_hash(s)
     }
 }
 
@@ -181,6 +200,7 @@ mod tests {
     };
     use quickcheck::{quickcheck, TestResult};
     use std::iter;
+    use std::str::FromStr;
 
     #[test]
     fn can_split_hash() {
@@ -192,6 +212,14 @@ mod tests {
             hash: "FLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u".to_string(),
         };
         assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn can_output_cost_and_salt_from_parsed_hash() {
+        let hash = "$2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
+        let parsed = HashParts::from_str(hash).unwrap();
+        assert_eq!(parsed.get_cost(), 12);
+        assert_eq!(parsed.get_salt(), "L6Bc/AlTQHyd9liGgGEZyO".to_string());
     }
 
     #[test]
