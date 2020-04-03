@@ -223,6 +223,18 @@ mod tests {
     }
 
     #[test]
+    fn returns_an_error_if_a_parsed_hash_is_baddly_formated() {
+        let hash1 = "$2y$12$L6Bc/AlTQHyd9lGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
+        assert!(HashParts::from_str(hash1).is_err());
+
+        let hash2 = "!2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
+        assert!(HashParts::from_str(hash2).is_err());
+
+        let hash3 = "$2y$-12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
+        assert!(HashParts::from_str(hash3).is_err());
+    }
+
+    #[test]
     fn can_verify_hash_generated_from_some_online_tool() {
         let hash = "$2a$04$UuTkLRZZ6QofpDOlMz32MuuxEHA43WOemOYHPz6.SjsVsyO1tDU96";
         assert!(verify("password", hash).unwrap());
