@@ -7,7 +7,7 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.6"
+bcrypt = "0.7"
 ```
 
 The minimum Rust version is 1.34.0
