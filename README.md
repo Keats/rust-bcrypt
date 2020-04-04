@@ -43,6 +43,7 @@ This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the ha
 
 ## Changelog
 
+* 0.7.0: add HashParts::from_str and remove Error::description impl, it's deprecated
 * 0.6.3: add `hash_with_salt` function and make `Version::format_for_version` public
 * 0.6.2: update base64 to 0.12
 * 0.6.1: update base64 to 0.11

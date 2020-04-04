@@ -57,19 +57,6 @@ impl fmt::Display for BcryptError {
 }
 
 impl error::Error for BcryptError {
-    fn description(&self) -> &str {
-        match *self {
-            BcryptError::Io(ref err) => err.description(),
-            BcryptError::InvalidCost(_) => "Invalid Cost",
-            BcryptError::CostNotAllowed(_) => "Cost not allowed",
-            BcryptError::InvalidPassword => "Invalid Password: contains NULL byte",
-            BcryptError::InvalidPrefix(_) => "Invalid Prefix",
-            BcryptError::InvalidHash(_) => "Invalid hash",
-            BcryptError::InvalidBase64(_, _) => "Invalid base64 char",
-            BcryptError::Rand(ref err) => err.description(),
-        }
-    }
-
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
             BcryptError::Io(ref err) => Some(err),
