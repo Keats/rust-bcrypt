@@ -1,4 +1,6 @@
 //! Easily hash and verify passwords using bcrypt
+#![forbid(unsafe_code)]
+
 use rand::{rngs::OsRng, RngCore};
 use std::convert::AsRef;
 use std::fmt;
