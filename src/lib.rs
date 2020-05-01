@@ -185,13 +185,12 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
         return Ok(false);
     }
 
+    let mut diff = 0;
     for (a, b) in source_decoded.into_iter().zip(generated_decoded) {
-        if a != b {
-            return Ok(false);
-        }
+        diff |= a ^ b;
     }
 
-    Ok(true)
+    Ok(diff == 0)
 }
 
 #[cfg(test)]
