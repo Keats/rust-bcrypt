@@ -97,7 +97,7 @@ fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashP
     // Output is 24
     let mut output = [0u8; 24];
     // Passwords need to be null terminated
-    let mut vec: Vec<u8> = Vec::new();
+    let mut vec = Vec::with_capacity(password.len() + 1);
     vec.extend_from_slice(password);
     vec.push(0);
     // We only consider the first 72 chars; truncate if necessary.
