@@ -6,7 +6,6 @@ use std::convert::AsRef;
 use std::fmt;
 use std::str::FromStr;
 
-mod b64;
 mod bcrypt;
 mod errors;
 
@@ -108,8 +107,8 @@ fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashP
 
     Ok(HashParts {
         cost,
-        salt: b64::encode(salt),
-        hash: b64::encode(&output[..23]), // remember to remove the last byte
+        salt: base64::encode_config(salt, base64::BCRYPT),
+        hash: base64::encode_config(&output[..23], base64::BCRYPT), // remember to remove the last byte
     })
 }
 
@@ -177,10 +176,10 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(password: P, cost: u32, salt: &[u8]) -> Bc
 /// Verify that a password is equivalent to the hash provided
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     let parts = split_hash(hash)?;
-    let salt = b64::decode(&parts.salt)?;
+    let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
     let generated = _hash_password(password.as_ref(), parts.cost, &salt)?;
-    let source_decoded = b64::decode(&parts.hash)?;
-    let generated_decoded = b64::decode(&generated.hash)?;
+    let source_decoded = base64::decode_config(&parts.hash, base64::BCRYPT)?;
+    let generated_decoded = base64::decode_config(&generated.hash, base64::BCRYPT)?;
     if source_decoded.len() != generated_decoded.len() {
         return Ok(false);
     }

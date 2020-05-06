@@ -16,7 +16,7 @@ pub enum BcryptError {
     InvalidCost(String),
     InvalidPrefix(String),
     InvalidHash(String),
-    InvalidBase64(char, String),
+    InvalidBase64(base64::DecodeError),
     Rand(rand::Error),
 }
 
@@ -30,6 +30,7 @@ macro_rules! impl_from_error {
     };
 }
 
+impl_from_error!(base64::DecodeError, BcryptError::InvalidBase64);
 impl_from_error!(io::Error, BcryptError::Io);
 impl_from_error!(rand::Error, BcryptError::Rand);
 
@@ -48,9 +49,7 @@ impl fmt::Display for BcryptError {
             BcryptError::InvalidPassword => write!(f, "Invalid password: contains NULL byte"),
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
             BcryptError::InvalidHash(ref hash) => write!(f, "Invalid hash: {}", hash),
-            BcryptError::InvalidBase64(ref c, ref hash) => {
-                write!(f, "Invalid base64 char {} in {}", c, hash)
-            }
+            BcryptError::InvalidBase64(ref err) => write!(f, "Base64 error: {}", err),
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
         }
     }
@@ -64,8 +63,8 @@ impl error::Error for BcryptError {
             | BcryptError::CostNotAllowed(_)
             | BcryptError::InvalidPassword
             | BcryptError::InvalidPrefix(_)
-            | BcryptError::InvalidBase64(_, _)
             | BcryptError::InvalidHash(_) => None,
+            BcryptError::InvalidBase64(ref err) => Some(err),
             BcryptError::Rand(ref err) => Some(err),
         }
     }
