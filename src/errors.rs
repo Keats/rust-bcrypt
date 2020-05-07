@@ -1,6 +1,10 @@
-use rand;
+use alloc::string::String;
+use core::fmt;
+use getrandom;
+
+#[cfg(feature = "std")]
 use std::error;
-use std::fmt;
+#[cfg(feature = "std")]
 use std::io;
 
 /// Library generic result type.
@@ -10,6 +14,7 @@ pub type BcryptResult<T> = Result<T, BcryptError>;
 /// All the errors we can encounter while hashing/verifying
 /// passwords
 pub enum BcryptError {
+    #[cfg(feature = "std")]
     Io(io::Error),
     CostNotAllowed(u32),
     InvalidPassword,
@@ -17,7 +22,7 @@ pub enum BcryptError {
     InvalidPrefix(String),
     InvalidHash(String),
     InvalidBase64(base64::DecodeError),
-    Rand(rand::Error),
+    Rand(getrandom::Error),
 }
 
 macro_rules! impl_from_error {
@@ -31,12 +36,14 @@ macro_rules! impl_from_error {
 }
 
 impl_from_error!(base64::DecodeError, BcryptError::InvalidBase64);
+#[cfg(feature = "std")]
 impl_from_error!(io::Error, BcryptError::Io);
-impl_from_error!(rand::Error, BcryptError::Rand);
+impl_from_error!(getrandom::Error, BcryptError::Rand);
 
 impl fmt::Display for BcryptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            #[cfg(feature = "std")]
             BcryptError::Io(ref err) => write!(f, "IO error: {}", err),
             BcryptError::InvalidCost(ref cost) => write!(f, "Invalid Cost: {}", cost),
             BcryptError::CostNotAllowed(ref cost) => write!(
@@ -55,6 +62,7 @@ impl fmt::Display for BcryptError {
     }
 }
 
+#[cfg(feature = "std")]
 impl error::Error for BcryptError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
