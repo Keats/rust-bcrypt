@@ -11,7 +11,7 @@ Add the following to Cargo.toml:
 bcrypt = "0.7"
 ```
 
-The minimum Rust version is 1.34.0
+The minimum Rust version is 1.34.0 (or 1.36.0 when using `alloc` instead of `std`).
 
 ## Usage
 The crate makes 3 things public: `DEFAULT_COST`, `hash`, `verify`.
@@ -29,7 +29,7 @@ The cost needs to be an integer between 4 and 31 (see benchmarks to have an idea
 
 ## Benchmarks
 Speed depends on the cost used: the highest the slowest.
-Here are some benchmarks on my 4 years old laptop to give you some ideas on the cost/speed ratio. 
+Here are some benchmarks on my 4 years old laptop to give you some ideas on the cost/speed ratio.
 Note that I don't go above 14 as it takes too long.
 
 ```

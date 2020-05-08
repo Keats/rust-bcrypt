@@ -1,10 +1,22 @@
 //! Easily hash and verify passwords using bcrypt
 #![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-use rand::{rngs::OsRng, RngCore};
-use std::convert::AsRef;
-use std::fmt;
-use std::str::FromStr;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[macro_use]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std as alloc;
+
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+
+use core::convert::AsRef;
+use core::fmt;
+use core::str::FromStr;
+use getrandom::getrandom;
 
 mod bcrypt;
 mod errors;
@@ -160,9 +172,8 @@ pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
 pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<HashParts> {
     let salt = {
         let mut s = [0u8; 16];
-        OsRng.fill_bytes(&mut s);
-        s
-    };
+        getrandom(&mut s).map(|_| s)
+    }?;
 
     _hash_password(password.as_ref(), cost, salt.as_ref())
 }
@@ -199,12 +210,17 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 #[cfg(test)]
 mod tests {
     use super::{
-        _hash_password, hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult,
-        HashParts, Version, DEFAULT_COST,
+        _hash_password,
+        alloc::{
+            string::{String, ToString},
+            vec::Vec,
+        },
+        hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
+        DEFAULT_COST,
     };
+    use core::iter;
+    use core::str::FromStr;
     use quickcheck::{quickcheck, TestResult};
-    use std::iter;
-    use std::str::FromStr;
 
     #[test]
     fn can_split_hash() {
@@ -325,15 +341,21 @@ mod tests {
     fn forbid_null_bytes() {
         fn assert_invalid_password(password: &[u8]) {
             match hash(password, DEFAULT_COST) {
-                Ok(_) => panic!(format!(
-                    "NULL bytes must be forbidden, but {:?} is allowed.",
-                    password
-                )),
+                Ok(_) => panic!(
+                    "{}",
+                    format!(
+                        "NULL bytes must be forbidden, but {:?} is allowed.",
+                        password
+                    )
+                ),
                 Err(BcryptError::InvalidPassword) => {}
-                Err(e) => panic!(format!(
-                    "NULL bytes are forbidden but error differs: {} for {:?}.",
-                    e, password
-                )),
+                Err(e) => panic!(
+                    "{}",
+                    format!(
+                        "NULL bytes are forbidden but error differs: {} for {:?}.",
+                        e, password
+                    )
+                ),
             }
         }
         assert_invalid_password("\0".as_bytes());

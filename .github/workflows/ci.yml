@@ -10,7 +10,16 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        rust: [1.34.0, stable]
+        rust: [1.34.0, 1.36.0, stable]
+
+        include:
+          - rust: 1.34.0
+            test_no_std: false
+          - rust: 1.36.0
+            test_no_std: true
+          - rust: stable
+            test_no_std: true
+      fail-fast: false
 
     steps:
     - name: Checkout repository
@@ -22,7 +31,18 @@ jobs:
         toolchain: ${{ matrix.rust }}
         profile: minimal
         override: true
+        components: rustfmt
 
     - name: Run tests
       run: |
         cargo test
+
+    - name: Run tests using no_std
+      if: matrix.test_no_std == true
+      run: |
+        cargo test --no-default-features --features alloc
+
+    - name: Check formatting
+      if: matrix.rust == 'stable'
+      run: |
+        cargo fmt --all -- --check
