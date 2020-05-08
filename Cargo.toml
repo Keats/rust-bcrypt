@@ -1,6 +1,6 @@
 [package]
 name = "bcrypt"
-version = "0.7.1"
+version = "0.8.0"
 authors = ["Vincent Prouillet <hello@prouilletvincent.com>"]
 license = "MIT"
 readme = "README.md"

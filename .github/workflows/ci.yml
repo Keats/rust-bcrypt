@@ -34,15 +34,42 @@ jobs:
         components: rustfmt
 
     - name: Run tests
-      run: |
-        cargo test
+      run: cargo test
 
     - name: Run tests using no_std
       if: matrix.test_no_std == true
-      run: |
-        cargo test --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc
 
-    - name: Check formatting
-      if: matrix.rust == 'stable'
-      run: |
-        cargo fmt --all -- --check
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings

@@ -8,10 +8,10 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.7"
+bcrypt = "0.8"
 ```
 
-The minimum Rust version is 1.34.0 (or 1.36.0 when using `alloc` instead of `std`).
+The minimum Rust version is 1.34.0 (or 1.36.0 when using the `alloc` feature instead of `std`).
 
 ## Usage
 The crate makes 3 things public: `DEFAULT_COST`, `hash`, `verify`.
@@ -29,22 +29,26 @@ The cost needs to be an integer between 4 and 31 (see benchmarks to have an idea
 
 ## Benchmarks
 Speed depends on the cost used: the highest the slowest.
-Here are some benchmarks on my 4 years old laptop to give you some ideas on the cost/speed ratio.
+Here are some benchmarks on a 2019 Macbook Pro to give you some ideas on the cost/speed ratio.
 Note that I don't go above 14 as it takes too long.
 
 ```
-test bench_cost_4       ... bench:   1,197,414 ns/iter (+/- 112,856)
-test bench_cost_10      ... bench:  73,629,975 ns/iter (+/- 4,439,106)
-test bench_cost_default ... bench: 319,749,671 ns/iter (+/- 29,216,326)
-test bench_cost_14      ... bench: 1,185,802,788 ns/iter (+/- 37,571,986)
+test bench_cost_10      ... bench:  51,474,665 ns/iter (+/- 16,006,581)
+test bench_cost_14      ... bench: 839,109,086 ns/iter (+/- 274,507,463)
+test bench_cost_4       ... bench:     795,814 ns/iter (+/- 42,838)
+test bench_cost_default ... bench: 195,344,338 ns/iter (+/- 8,329,675)
 ```
 
 ## Acknowledgments
 This [gist](https://gist.github.com/rgdmarshall/ae3dc072445ed88b357a) for the hash splitting and the null termination.
 
+## Recommendations
+While bcrypt works well as an algorithm, using something like [Argon2](https://en.wikipedia.org/wiki/Argon2) is recommended
+for new projects.
+
 ## Changelog
 
-* 0.7.1: constant time verification for hash + remove custom base64 code from repo
+* 0.8.0: constant time verification for hash, remove custom base64 code from repo and add `std` feature
 * 0.7.0: add HashParts::from_str and remove Error::description impl, it's deprecated
 * 0.6.3: add `hash_with_salt` function and make `Version::format_for_version` public
 * 0.6.2: update base64 to 0.12

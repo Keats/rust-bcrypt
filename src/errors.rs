@@ -1,6 +1,5 @@
 use alloc::string::String;
 use core::fmt;
-use getrandom;
 
 #[cfg(feature = "std")]
 use std::error;
