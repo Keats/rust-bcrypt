@@ -18,7 +18,7 @@ wasm-bindgen = ["getrandom/wasm-bindgen"]
 stdweb = ["getrandom/stdweb"]
 
 [dependencies]
-blowfish = { version = "0.4", features = ["bcrypt"] }
+blowfish = { version = "0.5", features = ["bcrypt"] }
 getrandom = "0.1"
 base64 = { version = "0.12.1", default-features = false }
 byteorder = { version = "1", default-features = false }
