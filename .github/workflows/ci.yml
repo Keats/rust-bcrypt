@@ -33,6 +33,9 @@ jobs:
         override: true
         components: rustfmt
 
+    - name: Check without features
+      run: cargo check --no-default-features
+
     - name: Run tests
       run: cargo test
 

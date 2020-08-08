@@ -2,21 +2,16 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-#[macro_use]
 extern crate alloc;
-#[cfg(feature = "std")]
-extern crate std as alloc;
 
 use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
 
-use core::convert::AsRef;
-use core::fmt;
-use core::str::FromStr;
-use getrandom::getrandom;
+use core::{fmt, str::FromStr};
+#[cfg(any(feature = "alloc", feature = "std"))]
+use {core::convert::AsRef, getrandom::getrandom};
 
 mod bcrypt;
 mod errors;
@@ -65,7 +60,7 @@ impl HashParts {
     /// Creates the bcrypt hash string from all its part, allowing to customize the version.
     pub fn format_for_version(&self, version: Version) -> String {
         // Cost need to have a length of 2 so padding with a 0 if cost < 10
-        format!("${}${:02}${}{}", version, self.cost, self.salt, self.hash)
+        alloc::format!("${}${:02}${}{}", version, self.cost, self.salt, self.hash)
     }
 }
 
@@ -97,6 +92,7 @@ impl fmt::Display for Version {
 
 /// The main meat: actually does the hashing and does some verification with
 /// the cost to ensure it's a correct one
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
     if cost > MAX_COST || cost < MIN_COST {
         return Err(BcryptError::CostNotAllowed(cost));
@@ -162,6 +158,7 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 
 /// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
     hash_with_result(password, cost).map(|r| r.format())
 }
@@ -169,6 +166,7 @@ pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
 /// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness.
 /// The function returns a result structure and allows to format the hash in different versions.
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<HashParts> {
     let salt = {
         let mut s = [0u8; 16];
@@ -180,6 +178,7 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
 
 /// Generates a password given a hash and a cost.
 /// The function returns a result structure and allows to format the hash in different versions.
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub fn hash_with_salt<P: AsRef<[u8]>>(
     password: P,
     cost: u32,
@@ -189,6 +188,7 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
 }
 
 /// Verify that a password is equivalent to the hash provided
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     let parts = split_hash(hash)?;
     let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
@@ -212,7 +212,9 @@ mod tests {
     use super::{
         _hash_password,
         alloc::{
+            format,
             string::{String, ToString},
+            vec,
             vec::Vec,
         },
         hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
