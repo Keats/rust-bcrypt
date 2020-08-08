@@ -48,6 +48,7 @@ for new projects.
 
 ## Changelog
 
+* 0.8.2: fix no-std build
 * 0.8.0: constant time verification for hash, remove custom base64 code from repo and add `std` feature
 * 0.7.0: add HashParts::from_str and remove Error::description impl, it's deprecated
 * 0.6.3: add `hash_with_salt` function and make `Version::format_for_version` public
