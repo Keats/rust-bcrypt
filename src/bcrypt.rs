@@ -1,5 +1,4 @@
 use blowfish::Blowfish;
-use byteorder::{ByteOrder, BE};
 
 fn setup(cost: u32, salt: &[u8], key: &[u8]) -> Blowfish {
     assert!(cost < 32);
@@ -32,7 +31,10 @@ pub fn bcrypt(cost: u32, salt: &[u8], password: &[u8], output: &mut [u8]) {
             ctext[i] = l;
             ctext[i + 1] = r;
         }
-        BE::write_u32(&mut output[i * 4..(i + 1) * 4], ctext[i]);
-        BE::write_u32(&mut output[(i + 1) * 4..(i + 2) * 4], ctext[i + 1]);
+
+        let buf = ctext[i].to_be_bytes();
+        output[i * 4..][..4].copy_from_slice(&buf);
+        let buf = ctext[i + 1].to_be_bytes();
+        output[(i + 1) * 4..][..4].copy_from_slice(&buf);
     }
 }
