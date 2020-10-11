@@ -20,7 +20,7 @@ stdweb = ["getrandom/stdweb"]
 [dependencies]
 blowfish = { version = "0.6", features = ["bcrypt"] }
 getrandom = "0.1"
-base64 = { version = "0.12.1", default-features = false }
+base64 = { version = "0.13", default-features = false }
 byteorder = { version = "1", default-features = false }
 
 [dev-dependencies]
