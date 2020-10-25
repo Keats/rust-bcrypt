@@ -12,15 +12,15 @@ edition = "2018"
 
 [features]
 default = ["std"]
-std = ["base64/std"]
+std = ["getrandom/std", "base64/std", "byteorder/std"]
 alloc = ["base64/alloc"]
-wasm-bindgen = ["getrandom/wasm-bindgen"]
-stdweb = ["getrandom/stdweb"]
+js = ["getrandom/js"]
 
 [dependencies]
 blowfish = { version = "0.6", features = ["bcrypt"] }
-getrandom = "0.1"
-base64 = { version = "0.12.1", default-features = false }
+getrandom = "0.2"
+base64 = { version = "0.13", default-features = false }
+byteorder = { version = "1", default-features = false }
 
 [dev-dependencies]
 quickcheck = "0.9.0"
