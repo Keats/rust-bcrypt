@@ -1,6 +1,6 @@
 [package]
 name = "bcrypt"
-version = "0.8.2"
+version = "0.9.0"
 authors = ["Vincent Prouillet <hello@prouilletvincent.com>"]
 license = "MIT"
 readme = "README.md"
@@ -12,15 +12,14 @@ edition = "2018"
 
 [features]
 default = ["std"]
-std = ["getrandom/std", "base64/std", "byteorder/std"]
+std = ["getrandom/std", "base64/std"]
 alloc = ["base64/alloc"]
 js = ["getrandom/js"]
 
 [dependencies]
-blowfish = { version = "0.6", features = ["bcrypt"] }
+blowfish = { version = "0.7", features = ["bcrypt"] }
 getrandom = "0.2"
 base64 = { version = "0.13", default-features = false }
-byteorder = { version = "1", default-features = false }
 
 [dev-dependencies]
 quickcheck = "0.9.0"
