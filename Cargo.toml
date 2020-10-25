@@ -12,7 +12,7 @@ edition = "2018"
 
 [features]
 default = ["std"]
-std = ["base64/std", "byteorder/std"]
+std = ["base64/std", "byteorder/std", "getrandom/std"]
 alloc = ["base64/alloc"]
 wasm-bindgen = ["getrandom/wasm-bindgen"]
 stdweb = ["getrandom/stdweb"]
