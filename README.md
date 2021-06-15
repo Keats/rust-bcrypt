@@ -48,6 +48,7 @@ for new projects.
 
 ## Changelog
 
+* 0.9.1: update blowfish to 0.8
 * 0.9.0: update base64 to 0.13 and getrandom to 0.2
 * 0.8.2: fix no-std build
 * 0.8.0: constant time verification for hash, remove custom base64 code from repo and add `std` feature
