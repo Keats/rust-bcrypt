@@ -94,7 +94,7 @@ impl fmt::Display for Version {
 /// the cost to ensure it's a correct one
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
-    if cost > MAX_COST || cost < MIN_COST {
+    if !(MIN_COST..=MAX_COST).contains(&cost) {
         return Err(BcryptError::CostNotAllowed(cost));
     }
     if password.contains(&0u8) {
