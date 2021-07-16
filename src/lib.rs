@@ -406,6 +406,9 @@ mod tests {
     #[test]
     fn does_no_error_on_char_boundary_splitting() {
         // Just checks that it does not panic
-        let _ = verify(&[], "2a$$$0$OOOOOOOOOOOOOOOOOOOOO£OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+        let _ = verify(
+            &[],
+            "2a$$$0$OOOOOOOOOOOOOOOOOOOOO£OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
+        );
     }
 }

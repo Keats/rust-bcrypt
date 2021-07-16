@@ -48,6 +48,7 @@ for new projects.
 
 ## Changelog
 
+* 0.10.1: fix panic with invalid hashes and allow `2x`
 * 0.10.0: update blowfish to 0.8 and minimum Rust version to 1.43.0.
 * 0.9.0: update base64 to 0.13 and getrandom to 0.2
 * 0.8.2: fix no-std build
