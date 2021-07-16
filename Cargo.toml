@@ -9,6 +9,7 @@ homepage = "https://github.com/Keats/rust-bcrypt"
 repository = "https://github.com/Keats/rust-bcrypt"
 keywords = ["bcrypt", "password", "web", "hash"]
 edition = "2018"
+include = ["src/**/*", "LICENSE", "README.md"]
 
 [features]
 default = ["std"]
