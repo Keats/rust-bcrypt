@@ -136,7 +136,8 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
         return Err(BcryptError::InvalidHash(hash.to_string()));
     }
 
-    if raw_parts[0] != "2y" && raw_parts[0] != "2b" && raw_parts[0] != "2a" && raw_parts[0] != "2x"  {
+    if raw_parts[0] != "2y" && raw_parts[0] != "2b" && raw_parts[0] != "2a" && raw_parts[0] != "2x"
+    {
         return Err(BcryptError::InvalidPrefix(raw_parts[0].to_string()));
     }
 
