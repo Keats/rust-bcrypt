@@ -147,7 +147,7 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
         return Err(BcryptError::InvalidCost(raw_parts[1].to_string()));
     }
 
-    if raw_parts[2].len() == 53 {
+    if raw_parts[2].len() == 53 && raw_parts[2].is_char_boundary(22) {
         parts.salt = raw_parts[2][..22].chars().collect();
         parts.hash = raw_parts[2][22..].chars().collect();
     } else {
@@ -401,5 +401,14 @@ mod tests {
             let hashed = hash(a, 4)?;
             Ok(TestResult::from_bool(!verify(b, &hashed)?))
         }
+    }
+
+    #[test]
+    fn does_no_error_on_char_boundary_splitting() {
+        // Just checks that it does not panic
+        let _ = verify(
+            &[],
+            "2a$$$0$OOOOOOOOOOOOOOOOOOOOO£OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
+        );
     }
 }
