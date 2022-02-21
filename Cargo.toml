@@ -18,7 +18,7 @@ alloc = ["base64/alloc"]
 js = ["getrandom/js"]
 
 [dependencies]
-blowfish = { version = "0.8", features = ["bcrypt"] }
+blowfish = { version = "0.9", features = ["bcrypt"] }
 getrandom = "0.2"
 base64 = { version = "0.13", default-features = false }
 
