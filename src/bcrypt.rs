@@ -27,7 +27,7 @@ pub fn bcrypt(cost: u32, salt: &[u8], password: &[u8], output: &mut [u8]) {
     for i in 0..3 {
         let i: usize = i * 2;
         for _ in 0..64 {
-            let (l, r) = state.bc_encrypt(ctext[i], ctext[i + 1]);
+            let [l, r] = state.bc_encrypt([ctext[i], ctext[i + 1]]);
             ctext[i] = l;
             ctext[i + 1] = r;
         }
