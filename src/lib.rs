@@ -273,6 +273,26 @@ mod tests {
 
     #[test]
     fn can_verify_hash_generated_from_go() {
+        /*
+            package main
+            import (
+                "io"
+                "os"
+                "golang.org/x/crypto/bcrypt"
+            )
+            func main() {
+                buf, err := io.ReadAll(os.Stdin)
+                if err != nil {
+                    panic(err)
+                }
+                out, err := bcrypt.GenerateFromPassword(buf, bcrypt.MinCost)
+                if err != nil {
+                    panic(err)
+                }
+                os.Stdout.Write(out)
+                os.Stdout.Write([]byte("\n"))
+            }
+        */
         let binary_input = vec![
             29, 225, 195, 167, 223, 236, 85, 195, 114, 227, 7, 0, 209, 239, 189, 24, 51, 105, 124,
             168, 151, 75, 144, 64, 198, 197, 196, 4, 241, 97, 110, 135,
