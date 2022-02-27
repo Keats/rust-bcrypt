@@ -273,7 +273,10 @@ mod tests {
 
     #[test]
     fn can_verify_hash_generated_from_go() {
-        let binary_input = vec![29, 225, 195, 167, 223, 236, 85, 195, 114, 227, 7, 0, 209, 239, 189, 24, 51, 105, 124, 168, 151, 75, 144, 64, 198, 197, 196, 4, 241, 97, 110, 135];
+        let binary_input = vec![
+            29, 225, 195, 167, 223, 236, 85, 195, 114, 227, 7, 0, 209, 239, 189, 24, 51, 105, 124,
+            168, 151, 75, 144, 64, 198, 197, 196, 4, 241, 97, 110, 135,
+        ];
         let hash = "$2a$04$tjARW6ZON3PhrAIRW2LG/u9aDw5eFdstYLR8nFCNaOQmsH9XD23w.";
         assert!(verify(binary_input, hash).unwrap());
     }
@@ -357,15 +360,26 @@ mod tests {
             match hash_and_check(p1, p2) {
                 Ok(checked) => {
                     if checked != expected {
-                        panic!("checked {:?} against {:?}, incorrect result {}", p1, p2, checked)
+                        panic!(
+                            "checked {:?} against {:?}, incorrect result {}",
+                            p1, p2, checked
+                        )
                     }
-                },
+                }
                 Err(e) => panic!("error evaluating password: {} for {:?}.", e, p1),
             }
         }
 
         // bcrypt should consider all of these distinct:
-        let test_passwords = vec!["\0", "passw0rd\0", "password\0with tail", "\0passw0rd", "a", "a\0", "a\0b\0"];
+        let test_passwords = vec![
+            "\0",
+            "passw0rd\0",
+            "password\0with tail",
+            "\0passw0rd",
+            "a",
+            "a\0",
+            "a\0b\0",
+        ];
 
         for (i, p1) in test_passwords.iter().enumerate() {
             for (j, p2) in test_passwords.iter().enumerate() {
