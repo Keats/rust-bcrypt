@@ -8,7 +8,7 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.11"
+bcrypt = "0.12"
 ```
 
 The minimum Rust version is 1.56.0.
@@ -48,6 +48,7 @@ for new projects.
 
 ## Changelog
 
+* 0.12.0: allow null bytes in password
 * 0.11.0: update deps causing big bump in MSRV
 * 0.10.1: fix panic with invalid hashes and allow `2x`
 * 0.10.0: update blowfish to 0.8 and minimum Rust version to 1.43.0.
