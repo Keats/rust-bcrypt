@@ -97,9 +97,6 @@ fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashP
     if !(MIN_COST..=MAX_COST).contains(&cost) {
         return Err(BcryptError::CostNotAllowed(cost));
     }
-    if password.contains(&0u8) {
-        return Err(BcryptError::InvalidPassword);
-    }
 
     // Output is 24
     let mut output = [0u8; 24];
@@ -213,7 +210,6 @@ mod tests {
     use super::{
         _hash_password,
         alloc::{
-            format,
             string::{String, ToString},
             vec,
             vec::Vec,
@@ -273,6 +269,36 @@ mod tests {
     fn can_verify_hash_generated_from_node() {
         let hash = "$2a$04$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk5bektyVVa5xnIi";
         assert!(verify("correctbatteryhorsestapler", hash).unwrap());
+    }
+
+    #[test]
+    fn can_verify_hash_generated_from_go() {
+        /*
+            package main
+            import (
+                "io"
+                "os"
+                "golang.org/x/crypto/bcrypt"
+            )
+            func main() {
+                buf, err := io.ReadAll(os.Stdin)
+                if err != nil {
+                    panic(err)
+                }
+                out, err := bcrypt.GenerateFromPassword(buf, bcrypt.MinCost)
+                if err != nil {
+                    panic(err)
+                }
+                os.Stdout.Write(out)
+                os.Stdout.Write([]byte("\n"))
+            }
+        */
+        let binary_input = vec![
+            29, 225, 195, 167, 223, 236, 85, 195, 114, 227, 7, 0, 209, 239, 189, 24, 51, 105, 124,
+            168, 151, 75, 144, 64, 198, 197, 196, 4, 241, 97, 110, 135,
+        ];
+        let hash = "$2a$04$tjARW6ZON3PhrAIRW2LG/u9aDw5eFdstYLR8nFCNaOQmsH9XD23w.";
+        assert!(verify(binary_input, hash).unwrap());
     }
 
     #[test]
@@ -341,31 +367,49 @@ mod tests {
     }
 
     #[test]
-    fn forbid_null_bytes() {
-        fn assert_invalid_password(password: &[u8]) {
-            match hash(password, DEFAULT_COST) {
-                Ok(_) => panic!(
-                    "{}",
-                    format!(
-                        "NULL bytes must be forbidden, but {:?} is allowed.",
-                        password
-                    )
-                ),
-                Err(BcryptError::InvalidPassword) => {}
-                Err(e) => panic!(
-                    "{}",
-                    format!(
-                        "NULL bytes are forbidden but error differs: {} for {:?}.",
-                        e, password
-                    )
-                ),
+    fn allow_null_bytes() {
+        // hash p1, check the hash against p2:
+        fn hash_and_check(p1: &[u8], p2: &[u8]) -> Result<bool, BcryptError> {
+            let fast_cost = 4;
+            match hash(p1, fast_cost) {
+                Ok(s) => verify(p2, &s),
+                Err(e) => Err(e),
             }
         }
-        assert_invalid_password("\0".as_bytes());
-        assert_invalid_password("\0\0\0\0\0\0\0\0".as_bytes());
-        assert_invalid_password("passw0rd\0".as_bytes());
-        assert_invalid_password("passw0rd\0with tail".as_bytes());
-        assert_invalid_password("\0passw0rd".as_bytes());
+        fn assert_valid_password(p1: &[u8], p2: &[u8], expected: bool) {
+            match hash_and_check(p1, p2) {
+                Ok(checked) => {
+                    if checked != expected {
+                        panic!(
+                            "checked {:?} against {:?}, incorrect result {}",
+                            p1, p2, checked
+                        )
+                    }
+                }
+                Err(e) => panic!("error evaluating password: {} for {:?}.", e, p1),
+            }
+        }
+
+        // bcrypt should consider all of these distinct:
+        let test_passwords = vec![
+            "\0",
+            "passw0rd\0",
+            "password\0with tail",
+            "\0passw0rd",
+            "a",
+            "a\0",
+            "a\0b\0",
+        ];
+
+        for (i, p1) in test_passwords.iter().enumerate() {
+            for (j, p2) in test_passwords.iter().enumerate() {
+                assert_valid_password(p1.as_bytes(), p2.as_bytes(), i == j);
+            }
+        }
+
+        // this is a quirk of the bcrypt algorithm: passwords that are entirely null
+        // bytes hash to the same value, even if they are different lengths:
+        assert_valid_password("\0\0\0\0\0\0\0\0".as_bytes(), "\0".as_bytes(), true);
     }
 
     #[test]

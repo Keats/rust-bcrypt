@@ -16,7 +16,6 @@ pub enum BcryptError {
     #[cfg(feature = "std")]
     Io(io::Error),
     CostNotAllowed(u32),
-    InvalidPassword,
     InvalidCost(String),
     InvalidPrefix(String),
     InvalidHash(String),
@@ -52,7 +51,6 @@ impl fmt::Display for BcryptError {
                 crate::MAX_COST,
                 cost
             ),
-            BcryptError::InvalidPassword => write!(f, "Invalid password: contains NULL byte"),
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
             BcryptError::InvalidHash(ref hash) => write!(f, "Invalid hash: {}", hash),
             BcryptError::InvalidBase64(ref err) => write!(f, "Base64 error: {}", err),
@@ -68,7 +66,6 @@ impl error::Error for BcryptError {
             BcryptError::Io(ref err) => Some(err),
             BcryptError::InvalidCost(_)
             | BcryptError::CostNotAllowed(_)
-            | BcryptError::InvalidPassword
             | BcryptError::InvalidPrefix(_)
             | BcryptError::InvalidHash(_) => None,
             BcryptError::InvalidBase64(ref err) => Some(err),
