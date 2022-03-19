@@ -21,6 +21,7 @@ js = ["getrandom/js"]
 blowfish = { version = "0.9", features = ["bcrypt"] }
 getrandom = "0.2"
 base64 = { version = "0.13", default-features = false }
+zeroize = "1.5.4"
 
 [dev-dependencies]
 quickcheck = "1"
