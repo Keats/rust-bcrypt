@@ -8,6 +8,7 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
+use zeroize::Zeroize;
 
 use core::{fmt, str::FromStr};
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -109,6 +110,8 @@ fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashP
     let truncated = if vec.len() > 72 { &vec[..72] } else { &vec };
 
     bcrypt::bcrypt(cost, salt, truncated, &mut output);
+
+    vec.zeroize();
 
     Ok(HashParts {
         cost,
