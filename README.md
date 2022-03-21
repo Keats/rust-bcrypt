@@ -48,6 +48,7 @@ for new projects.
 
 ## Changelog
 
+* 0.12.1: zero vec containing password in the hashing function before returning the hash
 * 0.12.0: allow null bytes in password
 * 0.11.0: update deps causing big bump in MSRV
 * 0.10.1: fix panic with invalid hashes and allow `2x`
