@@ -19,6 +19,7 @@ pub enum BcryptError {
     InvalidCost(String),
     InvalidPrefix(String),
     InvalidHash(String),
+    InvalidSaltLen(usize),
     InvalidBase64(base64::DecodeError),
     Rand(getrandom::Error),
 }

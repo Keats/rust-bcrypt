@@ -193,10 +193,12 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 
     let parts = split_hash(hash)?;
     let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
+    let salt_len = salt.len();
     let generated = _hash_password(
         password.as_ref(),
         parts.cost,
-        salt.try_into().expect("salt should be length 16"),
+        salt.try_into()
+            .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
     )?;
     let source_decoded = base64::decode_config(&parts.hash, base64::BCRYPT)?;
     let generated_decoded = base64::decode_config(&generated.hash, base64::BCRYPT)?;
