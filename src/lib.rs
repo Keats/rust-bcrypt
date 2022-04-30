@@ -312,6 +312,16 @@ mod tests {
     }
 
     #[test]
+    fn invalid_hash_does_not_panic() {
+        let binary_input = vec![
+            29, 225, 195, 167, 223, 236, 85, 195, 114, 227, 7, 0, 209, 239, 189, 24, 51, 105, 124,
+            168, 151, 75, 144, 64, 198, 197, 196, 4, 241, 97, 110, 135,
+        ];
+        let hash = "$2a$04$tjARW6ZON3PhrAIRW2LG/u9a.";
+        assert!(verify(binary_input, hash).is_err());
+    }
+
+    #[test]
     fn a_wrong_password_is_false() {
         let hash = "$2b$04$EGdrhbKUv8Oc9vGiXX0HQOxSg445d458Muh7DAHskb6QbtCvdxcie";
         assert!(!verify("wrong", hash).unwrap());
