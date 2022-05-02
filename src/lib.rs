@@ -189,7 +189,7 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
 /// Verify that a password is equivalent to the hash provided
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
-    use std::convert::TryInto;
+    use core::convert::TryInto;
 
     let parts = split_hash(hash)?;
     let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
@@ -226,10 +226,10 @@ mod tests {
         hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
         DEFAULT_COST,
     };
+    use core::convert::TryInto;
     use core::iter;
     use core::str::FromStr;
     use quickcheck::{quickcheck, TestResult};
-    use std::convert::TryInto;
 
     #[test]
     fn can_split_hash() {
