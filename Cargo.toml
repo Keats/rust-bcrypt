@@ -12,7 +12,7 @@ edition = "2018"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [features]
-default = ["std"]
+default = ["std", "zeroize"]
 std = ["getrandom/std", "base64/std"]
 alloc = ["base64/alloc"]
 js = ["getrandom/js"]
@@ -21,7 +21,7 @@ js = ["getrandom/js"]
 blowfish = { version = "0.9", features = ["bcrypt"] }
 getrandom = "0.2"
 base64 = { version = "0.13", default-features = false }
-zeroize = "1.5.4"
+zeroize = { version = "1.5.4", optional = true }
 
 [dev-dependencies]
 quickcheck = "1"

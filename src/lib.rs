@@ -8,6 +8,8 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
+
+#[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
 
 use core::{fmt, str::FromStr};
@@ -109,6 +111,7 @@ fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<Ha
 
     let output = bcrypt::bcrypt(cost, salt, truncated);
 
+    #[cfg(feature = "zeroize")]
     vec.zeroize();
 
     Ok(HashParts {
