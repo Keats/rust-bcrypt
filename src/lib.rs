@@ -94,13 +94,11 @@ impl fmt::Display for Version {
 /// The main meat: actually does the hashing and does some verification with
 /// the cost to ensure it's a correct one
 #[cfg(any(feature = "alloc", feature = "std"))]
-fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashParts> {
+fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<HashParts> {
     if !(MIN_COST..=MAX_COST).contains(&cost) {
         return Err(BcryptError::CostNotAllowed(cost));
     }
 
-    // Output is 24
-    let mut output = [0u8; 24];
     // Passwords need to be null terminated
     let mut vec = Vec::with_capacity(password.len() + 1);
     vec.extend_from_slice(password);
@@ -109,7 +107,7 @@ fn _hash_password(password: &[u8], cost: u32, salt: &[u8]) -> BcryptResult<HashP
     // `bcrypt` below will panic if len > 72
     let truncated = if vec.len() > 72 { &vec[..72] } else { &vec };
 
-    bcrypt::bcrypt(cost, salt, truncated, &mut output);
+    let output = bcrypt::bcrypt(cost, salt, truncated);
 
     vec.zeroize();
 
@@ -174,7 +172,7 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
         getrandom(&mut s).map(|_| s)
     }?;
 
-    _hash_password(password.as_ref(), cost, salt.as_ref())
+    _hash_password(password.as_ref(), cost, salt)
 }
 
 /// Generates a password given a hash and a cost.
@@ -183,7 +181,7 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
 pub fn hash_with_salt<P: AsRef<[u8]>>(
     password: P,
     cost: u32,
-    salt: &[u8],
+    salt: [u8; 16],
 ) -> BcryptResult<HashParts> {
     _hash_password(password.as_ref(), cost, salt)
 }
@@ -191,9 +189,17 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
 /// Verify that a password is equivalent to the hash provided
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
+    use core::convert::TryInto;
+
     let parts = split_hash(hash)?;
     let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
-    let generated = _hash_password(password.as_ref(), parts.cost, &salt)?;
+    let salt_len = salt.len();
+    let generated = _hash_password(
+        password.as_ref(),
+        parts.cost,
+        salt.try_into()
+            .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
+    )?;
     let source_decoded = base64::decode_config(&parts.hash, base64::BCRYPT)?;
     let generated_decoded = base64::decode_config(&generated.hash, base64::BCRYPT)?;
     if source_decoded.len() != generated_decoded.len() {
@@ -220,6 +226,7 @@ mod tests {
         hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
         DEFAULT_COST,
     };
+    use core::convert::TryInto;
     use core::iter;
     use core::str::FromStr;
     use quickcheck::{quickcheck, TestResult};
@@ -305,6 +312,16 @@ mod tests {
     }
 
     #[test]
+    fn invalid_hash_does_not_panic() {
+        let binary_input = vec![
+            29, 225, 195, 167, 223, 236, 85, 195, 114, 227, 7, 0, 209, 239, 189, 24, 51, 105, 124,
+            168, 151, 75, 144, 64, 198, 197, 196, 4, 241, 97, 110, 135,
+        ];
+        let hash = "$2a$04$tjARW6ZON3PhrAIRW2LG/u9a.";
+        assert!(verify(binary_input, hash).is_err());
+    }
+
+    #[test]
     fn a_wrong_password_is_false() {
         let hash = "$2b$04$EGdrhbKUv8Oc9vGiXX0HQOxSg445d458Muh7DAHskb6QbtCvdxcie";
         assert!(!verify("wrong", hash).unwrap());
@@ -348,7 +365,7 @@ mod tests {
     fn generate_versions() {
         let password = "hunter2".as_bytes();
         let salt = vec![0; 16];
-        let result = _hash_password(password, DEFAULT_COST, salt.as_slice()).unwrap();
+        let result = _hash_password(password, DEFAULT_COST, salt.try_into().unwrap()).unwrap();
         assert_eq!(
             "$2a$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm",
             result.format_for_version(Version::TwoA)
@@ -417,10 +434,10 @@ mod tests {
 
     #[test]
     fn hash_with_fixed_salt() {
-        let salt = vec![
+        let salt = [
             38, 113, 212, 141, 108, 213, 195, 166, 201, 38, 20, 13, 47, 40, 104, 18,
         ];
-        let hashed = hash_with_salt("My S3cre7 P@55w0rd!", 5, &salt)
+        let hashed = hash_with_salt("My S3cre7 P@55w0rd!", 5, salt)
             .unwrap()
             .to_string();
         assert_eq!(

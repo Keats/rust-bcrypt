@@ -19,6 +19,7 @@ pub enum BcryptError {
     InvalidCost(String),
     InvalidPrefix(String),
     InvalidHash(String),
+    InvalidSaltLen(usize),
     InvalidBase64(base64::DecodeError),
     Rand(getrandom::Error),
 }
@@ -54,6 +55,9 @@ impl fmt::Display for BcryptError {
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
             BcryptError::InvalidHash(ref hash) => write!(f, "Invalid hash: {}", hash),
             BcryptError::InvalidBase64(ref err) => write!(f, "Base64 error: {}", err),
+            BcryptError::InvalidSaltLen(len) => {
+                write!(f, "Invalid salt len: expected 16, received {}", len)
+            }
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
         }
     }
@@ -67,7 +71,8 @@ impl error::Error for BcryptError {
             BcryptError::InvalidCost(_)
             | BcryptError::CostNotAllowed(_)
             | BcryptError::InvalidPrefix(_)
-            | BcryptError::InvalidHash(_) => None,
+            | BcryptError::InvalidHash(_)
+            | BcryptError::InvalidSaltLen(_) => None,
             BcryptError::InvalidBase64(ref err) => Some(err),
             BcryptError::Rand(ref err) => Some(err),
         }

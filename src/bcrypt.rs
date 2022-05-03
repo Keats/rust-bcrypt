@@ -13,12 +13,12 @@ fn setup(cost: u32, salt: &[u8], key: &[u8]) -> Blowfish {
     state
 }
 
-pub fn bcrypt(cost: u32, salt: &[u8], password: &[u8], output: &mut [u8]) {
-    assert!(salt.len() == 16);
+pub fn bcrypt(cost: u32, salt: [u8; 16], password: &[u8]) -> [u8; 24] {
     assert!(!password.is_empty() && password.len() <= 72);
-    assert!(output.len() == 24);
 
-    let state = setup(cost, salt, password);
+    let mut output = [0; 24];
+
+    let state = setup(cost, &salt, password);
     // OrpheanBeholderScryDoubt
     #[allow(clippy::unreadable_literal)]
     let mut ctext = [
@@ -37,4 +37,6 @@ pub fn bcrypt(cost: u32, salt: &[u8], password: &[u8], output: &mut [u8]) {
         let buf = ctext[i + 1].to_be_bytes();
         output[(i + 1) * 4..][..4].copy_from_slice(&buf);
     }
+
+    output
 }
