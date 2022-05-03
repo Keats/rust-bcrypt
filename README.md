@@ -8,7 +8,7 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.12"
+bcrypt = "0.13"
 ```
 
 The minimum Rust version is 1.56.0.
@@ -48,6 +48,7 @@ for new projects.
 
 ## Changelog
 
+* 0.13.0: make zeroize dep opt-out and use fixed salt length
 * 0.12.1: zero vec containing password in the hashing function before returning the hash
 * 0.12.0: allow null bytes in password
 * 0.11.0: update deps causing big bump in MSRV
