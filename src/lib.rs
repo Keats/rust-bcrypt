@@ -137,16 +137,14 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
         return Err(BcryptError::InvalidHash(hash.to_string()));
     }
 
-    if raw_parts[0] != "2y" && raw_parts[0] != "2b" && raw_parts[0] != "2a" && raw_parts[0] != "2x"
-    {
+    let valid_versions = ["2y", "2b", "2a", "2x"];
+    if !valid_versions.contains(&raw_parts[0]) {
         return Err(BcryptError::InvalidPrefix(raw_parts[0].to_string()));
     }
 
-    if let Ok(c) = raw_parts[1].parse::<u32>() {
-        parts.cost = c;
-    } else {
-        return Err(BcryptError::InvalidCost(raw_parts[1].to_string()));
-    }
+    parts.cost = raw_parts[1]
+        .parse::<u32>()
+        .map_err(|_| BcryptError::InvalidCost(raw_parts[1].to_string()))?;
 
     if raw_parts[2].len() == 53 && raw_parts[2].is_char_boundary(22) {
         parts.salt = raw_parts[2][..22].chars().collect();
@@ -178,7 +176,7 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
     _hash_password(password.as_ref(), cost, salt)
 }
 
-/// Generates a password given a hash and a cost.
+/// Generates a password hash given a salt and a cost.
 /// The function returns a result structure and allows to format the hash in different versions.
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn hash_with_salt<P: AsRef<[u8]>>(
@@ -187,6 +185,26 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
     salt: [u8; 16],
 ) -> BcryptResult<HashParts> {
     _hash_password(password.as_ref(), cost, salt)
+}
+
+/// Generates a password hash given a base64 encoded salt and a cost.
+/// The function returns a result structure and allows to format the hash in different versions.
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn hash_with_base64_salt<P: AsRef<[u8]>>(
+    password: P,
+    cost: u32,
+    salt: &str,
+) -> BcryptResult<HashParts> {
+    use core::convert::TryInto;
+
+    let salt = base64::decode_config(&salt, base64::BCRYPT)?;
+    let salt_len = salt.len();
+    _hash_password(
+        password.as_ref(),
+        cost,
+        salt.try_into()
+            .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
+    )
 }
 
 /// Verify that a password is equivalent to the hash provided
