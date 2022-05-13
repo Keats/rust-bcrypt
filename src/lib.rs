@@ -237,12 +237,13 @@ mod tests {
             vec,
             vec::Vec,
         },
-        hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
-        DEFAULT_COST,
+        hash, hash_with_base64_salt, hash_with_salt, split_hash, verify, BcryptError, BcryptResult,
+        HashParts, Version, DEFAULT_COST,
     };
     use core::convert::TryInto;
     use core::iter;
     use core::str::FromStr;
+    use getrandom::getrandom;
     use quickcheck::{quickcheck, TestResult};
 
     #[test]
@@ -487,6 +488,26 @@ mod tests {
         let _ = verify(
             &[],
             "2a$$$0$OOOOOOOOOOOOOOOOOOOOO£OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
+        );
+    }
+
+    #[test]
+    fn base64_byte_array_hash_match() {
+        let byte_salt = {
+            let mut s = [0u8; 16];
+            getrandom(&mut s).map(|_| s)
+        }
+        .unwrap();
+
+        let base64_salt = base64::encode_config(byte_salt, base64::BCRYPT);
+        let password = "Pa$$w0rd123";
+        let cost = 5;
+
+        assert_eq!(
+            hash_with_salt(password, cost, byte_salt).unwrap().hash,
+            hash_with_base64_salt(password, cost, &base64_salt)
+                .unwrap()
+                .hash
         );
     }
 }
