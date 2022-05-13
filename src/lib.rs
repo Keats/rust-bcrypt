@@ -210,17 +210,10 @@ pub fn hash_with_base64_salt<P: AsRef<[u8]>>(
 /// Verify that a password is equivalent to the hash provided
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
-    use core::convert::TryInto;
-
     let parts = split_hash(hash)?;
-    let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
-    let salt_len = salt.len();
-    let generated = _hash_password(
-        password.as_ref(),
-        parts.cost,
-        salt.try_into()
-            .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
-    )?;
+
+    let generated = hash_with_base64_salt(password.as_ref(), parts.cost, &parts.salt)?;
+
     let source_decoded = base64::decode_config(&parts.hash, base64::BCRYPT)?;
     let generated_decoded = base64::decode_config(&generated.hash, base64::BCRYPT)?;
     if source_decoded.len() != generated_decoded.len() {
