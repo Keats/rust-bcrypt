@@ -193,6 +193,7 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     use core::convert::TryInto;
+    use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
     let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
@@ -205,16 +206,8 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     )?;
     let source_decoded = base64::decode_config(&parts.hash, base64::BCRYPT)?;
     let generated_decoded = base64::decode_config(&generated.hash, base64::BCRYPT)?;
-    if source_decoded.len() != generated_decoded.len() {
-        return Ok(false);
-    }
 
-    let mut diff = 0;
-    for (a, b) in source_decoded.into_iter().zip(generated_decoded) {
-        diff |= a ^ b;
-    }
-
-    Ok(diff == 0)
+    return Ok(source_decoded.ct_eq(&generated_decoded).into())
 }
 
 #[cfg(test)]
