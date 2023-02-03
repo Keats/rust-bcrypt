@@ -20,7 +20,7 @@ js = ["getrandom/js"]
 [dependencies]
 blowfish = { version = "0.9", features = ["bcrypt"] }
 getrandom = "0.2"
-base64 = { version = "0.13", default-features = false }
+base64 = { version = "0.21", default-features = false }
 zeroize = { version = "1.5.4", optional = true }
 subtle = "2.4.1"
 
