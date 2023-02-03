@@ -194,7 +194,6 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
 /// Verify that a password is equivalent to the hash provided
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
-    use core::convert::TryInto;
     use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
