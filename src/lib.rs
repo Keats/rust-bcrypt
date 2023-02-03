@@ -12,6 +12,7 @@ use alloc::{
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
 
+use base64::{alphabet::BCRYPT, engine::general_purpose::NO_PAD, engine::GeneralPurpose, Engine};
 use core::{fmt, str::FromStr};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use {core::convert::AsRef, getrandom::getrandom};
@@ -26,6 +27,7 @@ pub use crate::errors::{BcryptError, BcryptResult};
 const MIN_COST: u32 = 4;
 const MAX_COST: u32 = 31;
 pub const DEFAULT_COST: u32 = 12;
+pub const BASE_64: GeneralPurpose = GeneralPurpose::new(&BCRYPT, NO_PAD);
 
 #[derive(Debug, PartialEq)]
 /// A bcrypt hash result before concatenating
@@ -116,8 +118,8 @@ fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<Ha
 
     Ok(HashParts {
         cost,
-        salt: base64::encode_config(salt, base64::BCRYPT),
-        hash: base64::encode_config(&output[..23], base64::BCRYPT), // remember to remove the last byte
+        salt: BASE_64.encode(salt),
+        hash: BASE_64.encode(&output[..23]), // remember to remove the last byte
     })
 }
 
@@ -196,7 +198,7 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
-    let salt = base64::decode_config(&parts.salt, base64::BCRYPT)?;
+    let salt = BASE_64.decode(&parts.salt)?;
     let salt_len = salt.len();
     let generated = _hash_password(
         password.as_ref(),
@@ -204,10 +206,10 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
         salt.try_into()
             .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
     )?;
-    let source_decoded = base64::decode_config(&parts.hash, base64::BCRYPT)?;
-    let generated_decoded = base64::decode_config(&generated.hash, base64::BCRYPT)?;
+    let source_decoded = BASE_64.decode(parts.hash)?;
+    let generated_decoded = BASE_64.decode(generated.hash)?;
 
-    return Ok(source_decoded.ct_eq(&generated_decoded).into())
+    Ok(source_decoded.ct_eq(&generated_decoded).into())
 }
 
 #[cfg(test)]
