@@ -1,3 +1,4 @@
+#[cfg(any(feature = "alloc", feature = "std"))]
 use alloc::string::String;
 use core::fmt;
 
@@ -16,11 +17,15 @@ pub enum BcryptError {
     #[cfg(feature = "std")]
     Io(io::Error),
     CostNotAllowed(u32),
+    #[cfg(any(feature = "alloc", feature = "std"))]
     InvalidCost(String),
+    #[cfg(any(feature = "alloc", feature = "std"))]
     InvalidPrefix(String),
+    #[cfg(any(feature = "alloc", feature = "std"))]
     InvalidHash(String),
     InvalidSaltLen(usize),
     InvalidBase64(base64::DecodeError),
+    #[cfg(any(feature = "alloc", feature = "std"))]
     Rand(getrandom::Error),
 }
 
@@ -37,6 +42,7 @@ macro_rules! impl_from_error {
 impl_from_error!(base64::DecodeError, BcryptError::InvalidBase64);
 #[cfg(feature = "std")]
 impl_from_error!(io::Error, BcryptError::Io);
+#[cfg(any(feature = "alloc", feature = "std"))]
 impl_from_error!(getrandom::Error, BcryptError::Rand);
 
 impl fmt::Display for BcryptError {
@@ -44,6 +50,7 @@ impl fmt::Display for BcryptError {
         match *self {
             #[cfg(feature = "std")]
             BcryptError::Io(ref err) => write!(f, "IO error: {}", err),
+            #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::InvalidCost(ref cost) => write!(f, "Invalid Cost: {}", cost),
             BcryptError::CostNotAllowed(ref cost) => write!(
                 f,
@@ -52,12 +59,15 @@ impl fmt::Display for BcryptError {
                 crate::MAX_COST,
                 cost
             ),
+            #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::InvalidPrefix(ref prefix) => write!(f, "Invalid Prefix: {}", prefix),
+            #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::InvalidHash(ref hash) => write!(f, "Invalid hash: {}", hash),
             BcryptError::InvalidBase64(ref err) => write!(f, "Base64 error: {}", err),
             BcryptError::InvalidSaltLen(len) => {
                 write!(f, "Invalid salt len: expected 16, received {}", len)
             }
+            #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
         }
     }
