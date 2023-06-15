@@ -25,7 +25,8 @@ zeroize = { version = "1.5.4", optional = true }
 subtle = "2.4.1"
 
 [dev-dependencies]
-quickcheck = "1"
+# no default features avoid pulling in log
+quickcheck = { version = "1", default-features = false }
 
 [badges]
 maintenance = { status = "passively-maintained" }
