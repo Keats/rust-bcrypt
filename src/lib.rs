@@ -2,8 +2,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 extern crate alloc;
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -12,10 +14,10 @@ use alloc::{
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
 
-use base64::{alphabet::BCRYPT, engine::general_purpose::NO_PAD, engine::GeneralPurpose, Engine};
-use core::{fmt, str::FromStr};
+use base64::{alphabet::BCRYPT, engine::general_purpose::NO_PAD, engine::GeneralPurpose};
+use core::fmt;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use {core::convert::AsRef, getrandom::getrandom};
+use {base64::Engine, core::convert::AsRef, core::str::FromStr, getrandom::getrandom};
 
 mod bcrypt;
 mod errors;
@@ -29,6 +31,7 @@ const MAX_COST: u32 = 31;
 pub const DEFAULT_COST: u32 = 12;
 pub const BASE_64: GeneralPurpose = GeneralPurpose::new(&BCRYPT, NO_PAD);
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 #[derive(Debug, PartialEq)]
 /// A bcrypt hash result before concatenating
 pub struct HashParts {
@@ -46,6 +49,7 @@ pub enum Version {
     TwoB,
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 impl HashParts {
     /// Creates the bcrypt hash string from all its parts
     fn format(self) -> String {
@@ -69,6 +73,7 @@ impl HashParts {
     }
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 impl FromStr for HashParts {
     type Err = BcryptError;
 
@@ -77,6 +82,7 @@ impl FromStr for HashParts {
     }
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 impl ToString for HashParts {
     fn to_string(&self) -> String {
         self.format_for_version(Version::TwoY)
@@ -125,6 +131,7 @@ fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<Ha
 
 /// Takes a full hash and split it into 3 parts:
 /// cost, salt and hash
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     let mut parts = HashParts {
         cost: 0,

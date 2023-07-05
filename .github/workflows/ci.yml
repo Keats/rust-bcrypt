@@ -43,6 +43,26 @@ jobs:
       if: matrix.test_no_std == true
       run: cargo test --no-default-features --features alloc
 
+  bare-metal:
+    # tests no alloc, no_std, no getrandom
+    name: bare-metal
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: thumbv6m-none-eabi
+        profile: minimal
+        override: true
+
+    - name: Build
+      run: cd examples/bare-metal; cargo build
+
   fmt:
     runs-on: ubuntu-latest
     steps:

@@ -14,15 +14,15 @@ include = ["src/**/*", "LICENSE", "README.md"]
 [features]
 default = ["std", "zeroize"]
 std = ["getrandom/std", "base64/std"]
-alloc = ["base64/alloc"]
+alloc = ["base64/alloc", "getrandom"]
 js = ["getrandom/js"]
 
 [dependencies]
 blowfish = { version = "0.9", features = ["bcrypt"] }
-getrandom = "0.2"
+getrandom = { version = "0.2", default-features = false, optional = true }
 base64 = { version = "0.21", default-features = false }
 zeroize = { version = "1.5.4", optional = true }
-subtle = "2.4.1"
+subtle = { version = "2.4.1", default-features = false }
 
 [dev-dependencies]
 # no default features avoid pulling in log

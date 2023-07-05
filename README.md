@@ -27,6 +27,12 @@ let valid = verify("hunter2", &hashed)?;
 
 The cost needs to be an integer between 4 and 31 (see benchmarks to have an idea of the speed for each), the `DEFAULT_COST` is 12.
 
+## `no_std`
+
+`bcrypt` crate supports `no_std` platforms. When `alloc` feature is enabled,
+all crate functionality is available.  When `alloc` is not enabled only the
+raw `bcrypt()` function is usable.
+
 ## Benchmarks
 Speed depends on the cost used: the highest the slowest.
 Here are some benchmarks on a 2019 Macbook Pro to give you some ideas on the cost/speed ratio.
