@@ -31,6 +31,13 @@ jobs:
         toolchain: ${{ matrix.rust }}
         components: rustfmt
 
+    - name: Lower versions
+      run: |
+         cargo generate-lockfile
+         cargo update -p byteorder --precise 1.4.0
+         cargo update -p zeroize --precise 1.6.0
+      if: matrix.rust == '1.57.0'
+
     - name: Check without features
       run: cargo check --no-default-features
 
