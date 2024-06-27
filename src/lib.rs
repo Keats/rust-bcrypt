@@ -219,7 +219,7 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     Ok(source_decoded.ct_eq(&generated_decoded).into())
 }
 
-#[cfg(test)]
+#[cfg(all(test, any(feature = "alloc", feature = "std")))]
 mod tests {
     use super::{
         _hash_password,
