@@ -116,7 +116,15 @@ fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<Ha
     vec.push(0);
     // We only consider the first 72 chars; truncate if necessary.
     // `bcrypt` below will panic if len > 72
-    let truncated = if vec.len() > 72 { &vec[..72] } else { &vec };
+    let truncated = if vec.len() > 72 {
+        #[cfg(feature = "error_on_truncation")]
+        return Err(BcryptError::Truncation(vec.len()));
+
+        #[cfg(not(feature = "error_on_truncation"))]
+        &vec[..72]
+    } else {
+        &vec
+    };
 
     let output = bcrypt::bcrypt(cost, salt, truncated);
 
@@ -221,12 +229,13 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 
 #[cfg(all(test, any(feature = "alloc", feature = "std")))]
 mod tests {
+    #[cfg(not(feature = "error_on_truncation"))]
+    use super::alloc::vec::Vec;
     use super::{
         _hash_password,
         alloc::{
             string::{String, ToString},
             vec,
-            vec::Vec,
         },
         hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
         DEFAULT_COST,
@@ -234,6 +243,7 @@ mod tests {
     use core::convert::TryInto;
     use core::iter;
     use core::str::FromStr;
+    #[cfg(not(feature = "error_on_truncation"))]
     use quickcheck::{quickcheck, TestResult};
 
     #[test]
@@ -360,10 +370,22 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "error_on_truncation"))]
     fn long_passwords_truncate_correctly() {
         // produced with python -c 'import bcrypt; bcrypt.hashpw(b"x"*100, b"$2a$05$...............................")'
         let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
         assert!(verify(iter::repeat("x").take(100).collect::<String>(), hash).unwrap());
+    }
+
+    #[test]
+    #[cfg(feature = "error_on_truncation")]
+    fn error_on_truncation() {
+        let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
+        let verification = verify(iter::repeat("x").take(100).collect::<String>(), hash);
+        assert!(matches!(
+            verification,
+            BcryptResult::Err(BcryptError::Truncation(101))
+        ));
     }
 
     #[test]
@@ -451,6 +473,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(feature = "error_on_truncation"))]
     quickcheck! {
         fn can_verify_arbitrary_own_generated(pass: Vec<u8>) -> BcryptResult<bool> {
             let mut pass = pass;

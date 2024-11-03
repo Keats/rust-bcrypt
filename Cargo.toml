@@ -16,6 +16,7 @@ default = ["std", "zeroize"]
 std = ["getrandom/std", "base64/std"]
 alloc = ["base64/alloc", "getrandom"]
 js = ["getrandom/js"]
+error_on_truncation = []
 
 [dependencies]
 blowfish = { version = "0.9", features = ["bcrypt"] }

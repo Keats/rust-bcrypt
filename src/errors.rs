@@ -27,6 +27,7 @@ pub enum BcryptError {
     InvalidBase64(base64::DecodeError),
     #[cfg(any(feature = "alloc", feature = "std"))]
     Rand(getrandom::Error),
+    Truncation(usize),
 }
 
 macro_rules! impl_from_error {
@@ -69,6 +70,9 @@ impl fmt::Display for BcryptError {
             }
             #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
+            BcryptError::Truncation(_) => {
+                write!(f, "Password longer than 72 bytes will be truncated")
+            }
         }
     }
 }
@@ -82,7 +86,8 @@ impl error::Error for BcryptError {
             | BcryptError::CostNotAllowed(_)
             | BcryptError::InvalidPrefix(_)
             | BcryptError::InvalidHash(_)
-            | BcryptError::InvalidSaltLen(_) => None,
+            | BcryptError::InvalidSaltLen(_)
+            | BcryptError::Truncation(_) => None,
             BcryptError::InvalidBase64(ref err) => Some(err),
             BcryptError::Rand(ref err) => Some(err),
         }
