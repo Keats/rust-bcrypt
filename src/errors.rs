@@ -27,6 +27,8 @@ pub enum BcryptError {
     InvalidBase64(base64::DecodeError),
     #[cfg(any(feature = "alloc", feature = "std"))]
     Rand(getrandom::Error),
+    /// Only used when the `error_on_truncation` feature is enabled. This variant holds the length
+    /// of the input in bytes.
     Truncation(usize),
 }
 
