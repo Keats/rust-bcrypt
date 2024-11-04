@@ -27,9 +27,6 @@ let valid = verify("hunter2", &hashed)?;
 
 The cost needs to be an integer between 4 and 31 (see benchmarks to have an idea of the speed for each), the `DEFAULT_COST` is 12.
 
-## Error on truncation
-For broad compatibility, the default set of features allows hashing of passwords longer than 72 bytes (including the null terminator) by truncating the input to the first 72 bytes. Most if not all implementations will truncate by default. However, in certain use cases this can break 2nd pre-image resistance. If after careful consideration, one decides to enforce stricter safety, enabling the `error_on_truncation` feature at compile time will change `hash`, `hash_with_result`, `hash_with_salt`, and `verify` to return a truncation error when the input is longer than 72 bytes.
-
 ## `no_std`
 
 `bcrypt` crate supports `no_std` platforms. When `alloc` feature is enabled,

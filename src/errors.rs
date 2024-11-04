@@ -27,9 +27,6 @@ pub enum BcryptError {
     InvalidBase64(base64::DecodeError),
     #[cfg(any(feature = "alloc", feature = "std"))]
     Rand(getrandom::Error),
-    /// Only used when the `error_on_truncation` feature is enabled. This variant holds the length
-    /// of the input in bytes.
-    Truncation(usize),
 }
 
 macro_rules! impl_from_error {
@@ -72,9 +69,6 @@ impl fmt::Display for BcryptError {
             }
             #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
-            BcryptError::Truncation(_) => {
-                write!(f, "Password longer than 72 bytes will be truncated")
-            }
         }
     }
 }
@@ -88,8 +82,7 @@ impl error::Error for BcryptError {
             | BcryptError::CostNotAllowed(_)
             | BcryptError::InvalidPrefix(_)
             | BcryptError::InvalidHash(_)
-            | BcryptError::InvalidSaltLen(_)
-            | BcryptError::Truncation(_) => None,
+            | BcryptError::InvalidSaltLen(_) => None,
             BcryptError::InvalidBase64(ref err) => Some(err),
             BcryptError::Rand(ref err) => Some(err),
         }
