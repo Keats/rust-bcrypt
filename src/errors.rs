@@ -27,6 +27,9 @@ pub enum BcryptError {
     InvalidBase64(base64::DecodeError),
     #[cfg(any(feature = "alloc", feature = "std"))]
     Rand(getrandom::Error),
+    /// Return this error if the input contains more than 72 bytes. This variant contains the
+    /// length of the input in bytes.
+    Truncation(usize),
 }
 
 macro_rules! impl_from_error {
@@ -69,6 +72,9 @@ impl fmt::Display for BcryptError {
             }
             #[cfg(any(feature = "alloc", feature = "std"))]
             BcryptError::Rand(ref err) => write!(f, "Rand error: {}", err),
+            BcryptError::Truncation(len) => {
+                write!(f, "Expected 72 bytes or fewer; found {len} bytes")
+            }
         }
     }
 }
@@ -82,7 +88,8 @@ impl error::Error for BcryptError {
             | BcryptError::CostNotAllowed(_)
             | BcryptError::InvalidPrefix(_)
             | BcryptError::InvalidHash(_)
-            | BcryptError::InvalidSaltLen(_) => None,
+            | BcryptError::InvalidSaltLen(_)
+            | BcryptError::Truncation(_) => None,
             BcryptError::InvalidBase64(ref err) => Some(err),
             BcryptError::Rand(ref err) => Some(err),
         }
