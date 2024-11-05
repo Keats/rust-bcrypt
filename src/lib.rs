@@ -249,9 +249,11 @@ pub fn non_truncating_hash_with_salt<P: AsRef<[u8]>>(
     _hash_password(password.as_ref(), cost, salt, true)
 }
 
-/// Verify that a password is equivalent to the hash provided
+/// Verify the password against the hash by extracting the salt from the hash and recomputing the
+/// hash from the password. If `err_on_truncation` is set to true, then this method will return
+/// `BcryptError::Truncation`.
 #[cfg(any(feature = "alloc", feature = "std"))]
-pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
+fn _verify<P: AsRef<[u8]>>(password: P, hash: &str, err_on_truncation: bool) -> BcryptResult<bool> {
     use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
@@ -262,7 +264,7 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
         parts.cost,
         salt.try_into()
             .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
-        false,
+        err_on_truncation,
     )?;
     let source_decoded = BASE_64.decode(parts.hash)?;
     let generated_decoded = BASE_64.decode(generated.hash)?;
@@ -272,23 +274,14 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
 
 /// Verify that a password is equivalent to the hash provided
 #[cfg(any(feature = "alloc", feature = "std"))]
+pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
+    _verify(password, hash, false)
+}
+
+/// Verify that a password is equivalent to the hash provided
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub fn non_truncating_verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
-    use subtle::ConstantTimeEq;
-
-    let parts = split_hash(hash)?;
-    let salt = BASE_64.decode(&parts.salt)?;
-    let salt_len = salt.len();
-    let generated = _hash_password(
-        password.as_ref(),
-        parts.cost,
-        salt.try_into()
-            .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
-        true,
-    )?;
-    let source_decoded = BASE_64.decode(parts.hash)?;
-    let generated_decoded = BASE_64.decode(generated.hash)?;
-
-    Ok(source_decoded.ct_eq(&generated_decoded).into())
+    _verify(password, hash, true)
 }
 
 #[cfg(all(test, any(feature = "alloc", feature = "std")))]
@@ -302,8 +295,8 @@ mod tests {
             vec,
             vec::Vec,
         },
-        hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
-        DEFAULT_COST,
+        hash, hash_with_salt, non_truncating_verify, split_hash, verify, BcryptError, BcryptResult,
+        HashParts, Version, DEFAULT_COST,
     };
     use core::convert::TryInto;
     use core::iter;
@@ -449,6 +442,12 @@ mod tests {
         assert!(matches!(
             non_truncating_hash(iter::repeat("x").take(71).collect::<String>(), DEFAULT_COST),
             BcryptResult::Ok(_)
+        ));
+
+        let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
+        assert!(matches!(
+            non_truncating_verify(iter::repeat("x").take(100).collect::<String>(), hash),
+            Err(BcryptError::Truncation(101))
         ));
     }
 
