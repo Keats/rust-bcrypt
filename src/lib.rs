@@ -278,7 +278,9 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     _verify(password, hash, false)
 }
 
-/// Verify that a password is equivalent to the hash provided
+/// Verify that a password is equivalent to the hash provided.
+/// Only use this if you are only using `non_truncating_hash` to generate the hash.
+/// It will return an error for inputs that will work if generated from other sources.
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn non_truncating_verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     _verify(password, hash, true)

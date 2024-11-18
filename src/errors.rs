@@ -29,6 +29,7 @@ pub enum BcryptError {
     Rand(getrandom::Error),
     /// Return this error if the input contains more than 72 bytes. This variant contains the
     /// length of the input in bytes.
+    /// Only returned when calling `non_truncating_*` functions
     Truncation(usize),
 }
 
