@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust: [1.60.0, stable]
+        rust: [1.63.0, stable]
 
         include:
-          - rust: 1.60.0
+          - rust: 1.63.0
             test_no_std: false
-          - rust: 1.60.0
+          - rust: 1.63.0
             test_no_std: true
           - rust: stable
             test_no_std: true

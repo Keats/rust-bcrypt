@@ -8,10 +8,10 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.15"
+bcrypt = "0.16"
 ```
 
-The minimum Rust version is 1.60.0.
+The minimum Rust version is 1.63.0.
 
 ## Usage
 The crate makes 3 things public: `DEFAULT_COST`, `hash`, `verify`.
