@@ -27,6 +27,9 @@ let valid = verify("hunter2", &hashed)?;
 
 The cost needs to be an integer between 4 and 31 (see benchmarks to have an idea of the speed for each), the `DEFAULT_COST` is 12.
 
+## Error on truncation
+Most if not all bcrypt implementation truncates the password after 72 bytes. In specific use cases this can break 2nd pre-image resistance. One can enforce the 72-bytes limit on input by using `non_truncating_hash`, `non_truncating_hash_with_result`, `non_truncating_hash_with_salt`, and `non_truncating_verify`. The `non_truncating_*` functions behave identically to their truncating counterparts unless the input is longer than 72 bytes, in which case they will return `BcryptError::Truncation`.
+
 ## `no_std`
 
 `bcrypt` crate supports `no_std` platforms. When `alloc` feature is enabled,

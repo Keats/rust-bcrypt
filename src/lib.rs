@@ -103,9 +103,15 @@ impl fmt::Display for Version {
 }
 
 /// The main meat: actually does the hashing and does some verification with
-/// the cost to ensure it's a correct one
+/// the cost to ensure it's a correct one. If err_on_truncation, this method will return
+/// `BcryptError::Truncation`; otherwise it will truncate the password.
 #[cfg(any(feature = "alloc", feature = "std"))]
-fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<HashParts> {
+fn _hash_password(
+    password: &[u8],
+    cost: u32,
+    salt: [u8; 16],
+    err_on_truncation: bool,
+) -> BcryptResult<HashParts> {
     if !(MIN_COST..=MAX_COST).contains(&cost) {
         return Err(BcryptError::CostNotAllowed(cost));
     }
@@ -116,7 +122,14 @@ fn _hash_password(password: &[u8], cost: u32, salt: [u8; 16]) -> BcryptResult<Ha
     vec.push(0);
     // We only consider the first 72 chars; truncate if necessary.
     // `bcrypt` below will panic if len > 72
-    let truncated = if vec.len() > 72 { &vec[..72] } else { &vec };
+    let truncated = if vec.len() > 72 {
+        if err_on_truncation {
+            return Err(BcryptError::Truncation(vec.len()));
+        }
+        &vec[..72]
+    } else {
+        &vec
+    };
 
     let output = bcrypt::bcrypt(cost, salt, truncated);
 
@@ -176,6 +189,14 @@ pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
 }
 
 /// Generates a password hash using the cost given.
+/// The salt is generated randomly using the OS randomness
+/// Will return BcryptError::Truncation if password is longer than 72 bytes
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn non_truncating_hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
+    non_truncating_hash_with_result(password, cost).map(|r| r.format())
+}
+
+/// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness.
 /// The function returns a result structure and allows to format the hash in different versions.
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -185,7 +206,24 @@ pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<
         getrandom(&mut s).map(|_| s)
     }?;
 
-    _hash_password(password.as_ref(), cost, salt)
+    _hash_password(password.as_ref(), cost, salt, false)
+}
+
+/// Generates a password hash using the cost given.
+/// The salt is generated randomly using the OS randomness.
+/// The function returns a result structure and allows to format the hash in different versions.
+/// Will return BcryptError::Truncation if password is longer than 72 bytes
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn non_truncating_hash_with_result<P: AsRef<[u8]>>(
+    password: P,
+    cost: u32,
+) -> BcryptResult<HashParts> {
+    let salt = {
+        let mut s = [0u8; 16];
+        getrandom(&mut s).map(|_| s)
+    }?;
+
+    _hash_password(password.as_ref(), cost, salt, true)
 }
 
 /// Generates a password given a hash and a cost.
@@ -196,12 +234,26 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
     cost: u32,
     salt: [u8; 16],
 ) -> BcryptResult<HashParts> {
-    _hash_password(password.as_ref(), cost, salt)
+    _hash_password(password.as_ref(), cost, salt, false)
 }
 
-/// Verify that a password is equivalent to the hash provided
+/// Generates a password given a hash and a cost.
+/// The function returns a result structure and allows to format the hash in different versions.
+/// Will return BcryptError::Truncation if password is longer than 72 bytes
 #[cfg(any(feature = "alloc", feature = "std"))]
-pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
+pub fn non_truncating_hash_with_salt<P: AsRef<[u8]>>(
+    password: P,
+    cost: u32,
+    salt: [u8; 16],
+) -> BcryptResult<HashParts> {
+    _hash_password(password.as_ref(), cost, salt, true)
+}
+
+/// Verify the password against the hash by extracting the salt from the hash and recomputing the
+/// hash from the password. If `err_on_truncation` is set to true, then this method will return
+/// `BcryptError::Truncation`.
+#[cfg(any(feature = "alloc", feature = "std"))]
+fn _verify<P: AsRef<[u8]>>(password: P, hash: &str, err_on_truncation: bool) -> BcryptResult<bool> {
     use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
@@ -212,6 +264,7 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
         parts.cost,
         salt.try_into()
             .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
+        err_on_truncation,
     )?;
     let source_decoded = BASE_64.decode(parts.hash)?;
     let generated_decoded = BASE_64.decode(generated.hash)?;
@@ -219,8 +272,22 @@ pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
     Ok(source_decoded.ct_eq(&generated_decoded).into())
 }
 
+/// Verify that a password is equivalent to the hash provided
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
+    _verify(password, hash, false)
+}
+
+/// Verify that a password is equivalent to the hash provided
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn non_truncating_verify<P: AsRef<[u8]>>(password: P, hash: &str) -> BcryptResult<bool> {
+    _verify(password, hash, true)
+}
+
 #[cfg(all(test, any(feature = "alloc", feature = "std")))]
 mod tests {
+    use crate::non_truncating_hash;
+
     use super::{
         _hash_password,
         alloc::{
@@ -228,8 +295,8 @@ mod tests {
             vec,
             vec::Vec,
         },
-        hash, hash_with_salt, split_hash, verify, BcryptError, BcryptResult, HashParts, Version,
-        DEFAULT_COST,
+        hash, hash_with_salt, non_truncating_verify, split_hash, verify, BcryptError, BcryptResult,
+        HashParts, Version, DEFAULT_COST,
     };
     use core::convert::TryInto;
     use core::iter;
@@ -367,10 +434,29 @@ mod tests {
     }
 
     #[test]
+    fn non_truncating_operations() {
+        assert!(matches!(
+            non_truncating_hash(iter::repeat("x").take(72).collect::<String>(), DEFAULT_COST),
+            BcryptResult::Err(BcryptError::Truncation(73))
+        ));
+        assert!(matches!(
+            non_truncating_hash(iter::repeat("x").take(71).collect::<String>(), DEFAULT_COST),
+            BcryptResult::Ok(_)
+        ));
+
+        let hash = "$2a$05$......................YgIDy4hFBdVlc/6LHnD9mX488r9cLd2";
+        assert!(matches!(
+            non_truncating_verify(iter::repeat("x").take(100).collect::<String>(), hash),
+            Err(BcryptError::Truncation(101))
+        ));
+    }
+
+    #[test]
     fn generate_versions() {
         let password = "hunter2".as_bytes();
         let salt = vec![0; 16];
-        let result = _hash_password(password, DEFAULT_COST, salt.try_into().unwrap()).unwrap();
+        let result =
+            _hash_password(password, DEFAULT_COST, salt.try_into().unwrap(), false).unwrap();
         assert_eq!(
             "$2a$12$......................21jzCB1r6pN6rp5O2Ev0ejjTAboskKm",
             result.format_for_version(Version::TwoA)
