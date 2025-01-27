@@ -17,7 +17,7 @@ use zeroize::Zeroize;
 use base64::{alphabet::BCRYPT, engine::general_purpose::NO_PAD, engine::GeneralPurpose};
 use core::fmt;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use {base64::Engine, core::convert::AsRef, core::str::FromStr, getrandom::getrandom};
+use {base64::Engine, core::convert::AsRef, core::str::FromStr};
 
 mod bcrypt;
 mod errors;
@@ -32,7 +32,7 @@ pub const DEFAULT_COST: u32 = 12;
 pub const BASE_64: GeneralPurpose = GeneralPurpose::new(&BCRYPT, NO_PAD);
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 /// A bcrypt hash result before concatenating
 pub struct HashParts {
     cost: u32,
@@ -203,7 +203,7 @@ pub fn non_truncating_hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResu
 pub fn hash_with_result<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<HashParts> {
     let salt = {
         let mut s = [0u8; 16];
-        getrandom(&mut s).map(|_| s)
+        getrandom::fill(&mut s).map(|_| s)
     }?;
 
     _hash_password(password.as_ref(), cost, salt, false)
@@ -220,7 +220,7 @@ pub fn non_truncating_hash_with_result<P: AsRef<[u8]>>(
 ) -> BcryptResult<HashParts> {
     let salt = {
         let mut s = [0u8; 16];
-        getrandom(&mut s).map(|_| s)
+        getrandom::fill(&mut s).map(|_| s)
     }?;
 
     _hash_password(password.as_ref(), cost, salt, true)
