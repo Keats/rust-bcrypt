@@ -8,7 +8,7 @@
 Add the following to Cargo.toml:
 
 ```toml
-bcrypt = "0.16"
+bcrypt = "0.17"
 ```
 
 The minimum Rust version is 1.63.0.
@@ -61,6 +61,7 @@ for new projects.
 
 ## Changelog
 
+* 0.17.0: update getrandom and remove `js` featuree
 * 0.16.0: add `non_truncating_*` functions
 * 0.15.1: update base64 dependency
 * 0.15.0: add an `alloc` feature that can be disabled.
