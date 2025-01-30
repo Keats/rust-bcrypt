@@ -15,11 +15,10 @@ include = ["src/**/*", "LICENSE", "README.md"]
 default = ["std", "zeroize"]
 std = ["getrandom/std", "base64/std"]
 alloc = ["base64/alloc", "getrandom"]
-js = ["getrandom/js"]
 
 [dependencies]
 blowfish = { version = "0.9", features = ["bcrypt"] }
-getrandom = { version = "0.2", default-features = false, optional = true }
+getrandom = { version = "0.3", default-features = false, optional = true }
 base64 = { version = "0.22", default-features = false }
 zeroize = { version = "1.5.4", optional = true }
 subtle = { version = "2.4.1", default-features = false }
