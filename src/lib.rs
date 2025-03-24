@@ -534,7 +534,7 @@ mod tests {
             .unwrap()
             .to_string();
         assert_eq!(
-            "$2y$05$HlFShUxTu4ZHHfOLJwfmCeDj/kuKFKboanXtDJXxCC7aIPTUgxNDe",
+            "$2b$05$HlFShUxTu4ZHHfOLJwfmCeDj/kuKFKboanXtDJXxCC7aIPTUgxNDe",
             &hashed
         );
     }
