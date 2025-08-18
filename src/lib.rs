@@ -53,7 +53,7 @@ pub enum Version {
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl HashParts {
     /// Creates the bcrypt hash string from all its parts
-    fn format(self) -> String {
+    fn format(&self) -> String {
         self.format_for_version(Version::TwoB)
     }
 
@@ -84,9 +84,9 @@ impl FromStr for HashParts {
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-impl ToString for HashParts {
-    fn to_string(&self) -> String {
-        self.format_for_version(Version::TwoY)
+impl fmt::Display for HashParts {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.format())
     }
 }
 
@@ -534,7 +534,7 @@ mod tests {
             .unwrap()
             .to_string();
         assert_eq!(
-            "$2y$05$HlFShUxTu4ZHHfOLJwfmCeDj/kuKFKboanXtDJXxCC7aIPTUgxNDe",
+            "$2b$05$HlFShUxTu4ZHHfOLJwfmCeDj/kuKFKboanXtDJXxCC7aIPTUgxNDe",
             &hashed
         );
     }
