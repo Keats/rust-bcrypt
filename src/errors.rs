@@ -12,20 +12,29 @@ pub type BcryptResult<T> = Result<T, BcryptError>;
 /// All the errors we can encounter while hashing/verifying
 /// passwords
 pub enum BcryptError {
+    /// Raised when the cost value is outside of the allowed 4-31 range.
+    ///
+    /// Cost is provided as an argument to hashing functions, and extracted from the hash in
+    /// verification functions.
     CostNotAllowed(u32),
+    /// Raised when verifying against an incorrectly formatted hash.
     #[cfg(any(feature = "alloc", feature = "std"))]
     InvalidCost(String),
+    /// Raised when verifying against an incorrectly formatted hash.
     #[cfg(any(feature = "alloc", feature = "std"))]
     InvalidPrefix(String),
+    /// Raised when verifying against an incorrectly formatted hash.
     #[cfg(any(feature = "alloc", feature = "std"))]
     InvalidHash(String),
+    /// Raised when verifying against an incorrectly formatted hash.
     InvalidSaltLen(usize),
+    /// Raised when verifying against an incorrectly formatted hash.
     InvalidBase64(base64::DecodeError),
+    /// Raised when an error occurs when generating a salt value.
     #[cfg(any(feature = "alloc", feature = "std"))]
     Rand(getrandom::Error),
-    /// Return this error if the input contains more than 72 bytes. This variant contains the
-    /// length of the input in bytes.
-    /// Only returned when calling `non_truncating_*` functions
+    /// Raised when the input to a `non_truncating_*` function contains more than 72 bytes.
+    /// This variant contains the length of the input in bytes.
     Truncation(usize),
 }
 
