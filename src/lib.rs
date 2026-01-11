@@ -157,25 +157,27 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     let raw_parts: Vec<_> = hash.split('$').filter(|s| !s.is_empty()).collect();
 
     if raw_parts.len() != 3 {
-        return Err(BcryptError::InvalidHash(hash.to_string()));
+        return Err(BcryptError::InvalidHash("the hash format is malformed"));
     }
 
     if raw_parts[0] != "2y" && raw_parts[0] != "2b" && raw_parts[0] != "2a" && raw_parts[0] != "2x"
     {
-        return Err(BcryptError::InvalidPrefix(raw_parts[0].to_string()));
+        return Err(BcryptError::InvalidHash(
+            "the hash prefix is not a bcrypt prefix",
+        ));
     }
 
     if let Ok(c) = raw_parts[1].parse::<u32>() {
         parts.cost = c;
     } else {
-        return Err(BcryptError::InvalidCost(raw_parts[1].to_string()));
+        return Err(BcryptError::InvalidHash("the cost value is not a number"));
     }
 
     if raw_parts[2].len() == 53 && raw_parts[2].is_char_boundary(22) {
         parts.salt = raw_parts[2][..22].chars().collect();
         parts.hash = raw_parts[2][22..].chars().collect();
     } else {
-        return Err(BcryptError::InvalidHash(hash.to_string()));
+        return Err(BcryptError::InvalidHash("the hash format is malformed"));
     }
 
     Ok(parts)
@@ -257,17 +259,22 @@ fn _verify<P: AsRef<[u8]>>(password: P, hash: &str, err_on_truncation: bool) -> 
     use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
-    let salt = BASE_64.decode(&parts.salt)?;
-    let salt_len = salt.len();
+    let salt = BASE_64
+        .decode(&parts.salt)
+        .map_err(|_| BcryptError::InvalidHash("the salt part is not valid base64"))?;
     let generated = _hash_password(
         password.as_ref(),
         parts.cost,
         salt.try_into()
-            .map_err(|_| BcryptError::InvalidSaltLen(salt_len))?,
+            .map_err(|_| BcryptError::InvalidHash("the salt length is not 16 bytes"))?,
         err_on_truncation,
     )?;
-    let source_decoded = BASE_64.decode(parts.hash)?;
-    let generated_decoded = BASE_64.decode(generated.hash)?;
+    let source_decoded = BASE_64
+        .decode(parts.hash)
+        .map_err(|_| BcryptError::InvalidHash("the hash to verify against is not valid base64"))?;
+    let generated_decoded = BASE_64.decode(generated.hash).map_err(|_| {
+        BcryptError::InvalidHash("the generated hash for the password is not valid base64")
+    })?;
 
     Ok(source_decoded.ct_eq(&generated_decoded).into())
 }
