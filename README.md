@@ -61,6 +61,7 @@ for new projects.
 
 ## Changelog
 
+* 0.18.0: Simplify error kinds, bump edition to 2024
 * 0.17.1: implements `Display` for HashParts instead of `ToString`
 * 0.17.0: update getrandom and remove `js` featuree
 * 0.16.0: add `non_truncating_*` functions

@@ -14,7 +14,7 @@ use alloc::{
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
 
-use base64::{alphabet::BCRYPT, engine::general_purpose::NO_PAD, engine::GeneralPurpose};
+use base64::{alphabet::BCRYPT, engine::GeneralPurpose, engine::general_purpose::NO_PAD};
 use core::fmt;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use {base64::Engine, core::convert::AsRef, core::str::FromStr};
@@ -298,19 +298,18 @@ mod tests {
     use crate::non_truncating_hash;
 
     use super::{
-        _hash_password,
+        _hash_password, BcryptError, BcryptResult, DEFAULT_COST, HashParts, Version,
         alloc::{
             string::{String, ToString},
             vec,
             vec::Vec,
         },
-        hash, hash_with_salt, non_truncating_verify, split_hash, verify, BcryptError, BcryptResult,
-        HashParts, Version, DEFAULT_COST,
+        hash, hash_with_salt, non_truncating_verify, split_hash, verify,
     };
     use core::convert::TryInto;
     use core::iter;
     use core::str::FromStr;
-    use quickcheck::{quickcheck, TestResult};
+    use quickcheck::{TestResult, quickcheck};
 
     #[test]
     fn can_split_hash() {

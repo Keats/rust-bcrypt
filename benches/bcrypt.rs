@@ -2,7 +2,7 @@
 extern crate bcrypt;
 extern crate test;
 
-use bcrypt::{hash, DEFAULT_COST};
+use bcrypt::{DEFAULT_COST, hash};
 
 #[bench]
 fn bench_cost_4(b: &mut test::Bencher) {
