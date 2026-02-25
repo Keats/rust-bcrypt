@@ -116,25 +116,24 @@ fn _hash_password(
         return Err(BcryptError::CostNotAllowed(cost));
     }
 
-    // Passwords need to be null terminated
-    let mut vec = Vec::with_capacity(password.len() + 1);
-    vec.extend_from_slice(password);
-    vec.push(0);
-    // We only consider the first 72 chars; truncate if necessary.
-    // `bcrypt` below will panic if len > 72
-    let truncated = if vec.len() > 72 {
-        if err_on_truncation {
-            return Err(BcryptError::Truncation(vec.len()));
-        }
-        &vec[..72]
-    } else {
-        &vec
-    };
+    let password_len = password.len();
+    if err_on_truncation && password_len >= 72 {
+        return Err(BcryptError::Truncation(password_len + 1));
+    }
+
+    // The bcrypt spec specifies that passwords should be null terminated
+    // strings, but if longer than 72 bytes, are truncated at 72 bytes (thereby
+    // losing the null byte at the end).
+    let copy_len = password_len.min(72);
+    let mut pass = [0u8; 72];
+    pass[..copy_len].copy_from_slice(&password[..copy_len]);
+    let used = (copy_len + 1).min(72);
+    let truncated = &pass[..used];
 
     let output = bcrypt::bcrypt(cost, salt, truncated);
 
     #[cfg(feature = "zeroize")]
-    vec.zeroize();
+    pass.zeroize();
 
     Ok(HashParts {
         cost,
