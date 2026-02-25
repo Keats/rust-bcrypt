@@ -252,6 +252,23 @@ pub fn non_truncating_hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResu
     })
 }
 
+/// Generates a password hash using the cost given, returning a fixed-size stack buffer.
+/// The salt is generated randomly using the OS randomness.
+/// The returned buffer is always exactly 60 bytes of valid UTF-8 (version 2b format).
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn hash_bytes<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<[u8; 60]> {
+    hash_with_result(password, cost).map(|r| r.format())
+}
+
+/// Generates a password hash using the cost given, returning a fixed-size stack buffer.
+/// The salt is generated randomly using the OS randomness.
+/// The returned buffer is always exactly 60 bytes of valid UTF-8 (version 2b format).
+/// Will return BcryptError::Truncation if password is longer than 72 bytes
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn non_truncating_hash_bytes<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<[u8; 60]> {
+    non_truncating_hash_with_result(password, cost).map(|r| r.format())
+}
+
 /// Generates a password hash using the cost given.
 /// The salt is generated randomly using the OS randomness.
 /// The function returns a result structure and allows to format the hash in different versions.
@@ -293,6 +310,17 @@ pub fn hash_with_salt<P: AsRef<[u8]>>(
     _hash_password(password.as_ref(), cost, salt, false)
 }
 
+/// Generates a password given a hash and a cost, returning a fixed-size stack buffer.
+/// The returned buffer is always exactly 60 bytes of valid UTF-8 (version 2b format).
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn hash_with_salt_bytes<P: AsRef<[u8]>>(
+    password: P,
+    cost: u32,
+    salt: [u8; 16],
+) -> BcryptResult<[u8; 60]> {
+    _hash_password(password.as_ref(), cost, salt, false).map(|r| r.format())
+}
+
 /// Generates a password given a hash and a cost.
 /// The function returns a result structure and allows to format the hash in different versions.
 /// Will return BcryptError::Truncation if password is longer than 72 bytes
@@ -303,6 +331,18 @@ pub fn non_truncating_hash_with_salt<P: AsRef<[u8]>>(
     salt: [u8; 16],
 ) -> BcryptResult<HashParts> {
     _hash_password(password.as_ref(), cost, salt, true)
+}
+
+/// Generates a password given a hash and a cost, returning a fixed-size stack buffer.
+/// The returned buffer is always exactly 60 bytes of valid UTF-8 (version 2b format).
+/// Will return BcryptError::Truncation if password is longer than 72 bytes
+#[cfg(any(feature = "alloc", feature = "std"))]
+pub fn non_truncating_hash_with_salt_bytes<P: AsRef<[u8]>>(
+    password: P,
+    cost: u32,
+    salt: [u8; 16],
+) -> BcryptResult<[u8; 60]> {
+    _hash_password(password.as_ref(), cost, salt, true).map(|r| r.format())
 }
 
 /// Verify the password against the hash by extracting the salt from the hash and recomputing the
@@ -343,7 +383,8 @@ mod tests {
             vec,
             vec::Vec,
         },
-        hash, hash_with_salt, non_truncating_verify, split_hash, verify,
+        hash, hash_bytes, hash_with_salt, hash_with_salt_bytes, non_truncating_hash_bytes,
+        non_truncating_hash_with_salt_bytes, non_truncating_verify, split_hash, verify,
     };
     use base64::Engine as _;
     use core::convert::TryInto;
@@ -615,6 +656,66 @@ mod tests {
             "$2b$05$HlFShUxTu4ZHHfOLJwfmCeDj/kuKFKboanXtDJXxCC7aIPTUgxNDe",
             &hashed
         );
+    }
+
+    #[test]
+    fn hash_bytes_returns_valid_utf8_bcrypt_string() {
+        let result = hash_bytes("hunter2", 4).unwrap();
+        let s = core::str::from_utf8(&result).unwrap();
+        assert!(s.starts_with("$2b$04$"));
+        assert_eq!(s.len(), 60);
+        assert!(verify("hunter2", s).unwrap());
+    }
+
+    #[test]
+    fn non_truncating_hash_bytes_returns_valid_utf8_bcrypt_string() {
+        let result = non_truncating_hash_bytes("hunter2", 4).unwrap();
+        let s = core::str::from_utf8(&result).unwrap();
+        assert!(s.starts_with("$2b$04$"));
+        assert_eq!(s.len(), 60);
+        assert!(verify("hunter2", s).unwrap());
+    }
+
+    #[test]
+    fn non_truncating_hash_bytes_errors_on_long_password() {
+        use core::iter;
+        let result = non_truncating_hash_bytes(iter::repeat("x").take(72).collect::<String>(), 4);
+        assert!(matches!(result, Err(BcryptError::Truncation(73))));
+    }
+
+    #[test]
+    fn hash_with_salt_bytes_matches_hash_with_salt() {
+        let salt = [
+            38, 113, 212, 141, 108, 213, 195, 166, 201, 38, 20, 13, 47, 40, 104, 18,
+        ];
+        let expected = hash_with_salt("My S3cre7 P@55w0rd!", 5, salt)
+            .unwrap()
+            .to_string();
+        let result = hash_with_salt_bytes("My S3cre7 P@55w0rd!", 5, salt).unwrap();
+        let s = core::str::from_utf8(&result).unwrap();
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn non_truncating_hash_with_salt_bytes_errors_on_long_password() {
+        use core::iter;
+        let salt = [0u8; 16];
+        let result = non_truncating_hash_with_salt_bytes(
+            iter::repeat("x").take(72).collect::<String>(),
+            4,
+            salt,
+        );
+        assert!(matches!(result, Err(BcryptError::Truncation(73))));
+    }
+
+    #[test]
+    fn hash_bytes_matches_hash_string() {
+        let salt = [0u8; 16];
+        let result_parts = _hash_password("hunter2".as_bytes(), 4, salt, false).unwrap();
+        let from_parts = result_parts.format_for_version(Version::TwoB);
+        let bytes_result = hash_with_salt_bytes("hunter2", 4, salt).unwrap();
+        let from_bytes = core::str::from_utf8(&bytes_result).unwrap();
+        assert_eq!(from_parts, from_bytes);
     }
 
     quickcheck! {
