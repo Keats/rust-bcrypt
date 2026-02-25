@@ -6,10 +6,7 @@
 extern crate alloc;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{string::String, vec::Vec};
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
@@ -36,8 +33,8 @@ pub const BASE_64: GeneralPurpose = GeneralPurpose::new(&BCRYPT, NO_PAD);
 /// A bcrypt hash result before concatenating
 pub struct HashParts {
     cost: u32,
-    salt: String,
-    hash: String,
+    salt: [u8; 16],
+    hash: [u8; 23],
 }
 
 #[derive(Clone, Debug)]
@@ -52,9 +49,28 @@ pub enum Version {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl HashParts {
-    /// Creates the bcrypt hash string from all its parts
-    fn format(&self) -> String {
-        self.format_for_version(Version::TwoB)
+    /// Creates the bcrypt hash string (version 2b) into a fixed-size stack buffer.
+    /// The full bcrypt hash string is always exactly 60 bytes.
+    fn format(&self) -> [u8; 60] {
+        struct ByteBuf<const N: usize> {
+            buf: [u8; N],
+            pos: usize,
+        }
+        impl<const N: usize> fmt::Write for ByteBuf<N> {
+            fn write_str(&mut self, s: &str) -> fmt::Result {
+                let bytes = s.as_bytes();
+                self.buf[self.pos..self.pos + bytes.len()].copy_from_slice(bytes);
+                self.pos += bytes.len();
+                Ok(())
+            }
+        }
+        let mut w = ByteBuf {
+            buf: [0u8; 60],
+            pos: 0,
+        };
+        self.write_for_version(Version::TwoB, &mut w)
+            .expect("writing into a correctly sized buffer is infallible");
+        w.buf
     }
 
     /// Get the bcrypt hash cost
@@ -62,15 +78,42 @@ impl HashParts {
         self.cost
     }
 
-    /// Get the bcrypt hash salt
+    /// Get the bcrypt hash salt as a base64-encoded string
     pub fn get_salt(&self) -> String {
-        self.salt.clone()
+        BASE_64.encode(self.salt)
     }
 
-    /// Creates the bcrypt hash string from all its part, allowing to customize the version.
+    /// Get the raw salt bytes
+    pub fn get_salt_raw(&self) -> [u8; 16] {
+        self.salt
+    }
+
+    /// Creates the bcrypt hash string from all its parts, allowing to customize the version.
     pub fn format_for_version(&self, version: Version) -> String {
-        // Cost need to have a length of 2 so padding with a 0 if cost < 10
-        alloc::format!("${}${:02}${}{}", version, self.cost, self.salt, self.hash)
+        let mut s = String::with_capacity(60);
+        self.write_for_version(version, &mut s).expect("writing into a String is infallible");
+        s
+    }
+
+    /// Writes the bcrypt hash string into any `fmt::Write` sink without allocating.
+    /// Useful for writing into stack buffers (e.g. `arrayvec`, `heapless::String`).
+    pub fn write_for_version<W: fmt::Write>(&self, version: Version, w: &mut W) -> fmt::Result {
+        let mut salt_buf = [0u8; 22];
+        let mut hash_buf = [0u8; 31];
+        BASE_64
+            .encode_slice(self.salt, &mut salt_buf)
+            .expect("salt encoding into correctly sized buffer is infallible");
+        BASE_64
+            .encode_slice(self.hash, &mut hash_buf)
+            .expect("hash encoding into correctly sized buffer is infallible");
+        write!(
+            w,
+            "${}${:02}${}{}",
+            version,
+            self.cost,
+            core::str::from_utf8(&salt_buf).expect("base64 output is always valid UTF-8"),
+            core::str::from_utf8(&hash_buf).expect("base64 output is always valid UTF-8")
+        )
     }
 }
 
@@ -86,7 +129,7 @@ impl FromStr for HashParts {
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl fmt::Display for HashParts {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format())
+        self.write_for_version(Version::TwoB, f)
     }
 }
 
@@ -137,8 +180,8 @@ fn _hash_password(
 
     Ok(HashParts {
         cost,
-        salt: BASE_64.encode(salt),
-        hash: BASE_64.encode(&output[..23]), // remember to remove the last byte
+        salt,
+        hash: output[..23].try_into().unwrap(), // infallible: output is [u8; 24]
     })
 }
 
@@ -148,8 +191,8 @@ fn _hash_password(
 fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     let mut parts = HashParts {
         cost: 0,
-        salt: "".to_string(),
-        hash: "".to_string(),
+        salt: [0u8; 16],
+        hash: [0u8; 23],
     };
 
     // Should be [prefix, cost, hash]
@@ -173,8 +216,12 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
     }
 
     if raw_parts[2].len() == 53 && raw_parts[2].is_char_boundary(22) {
-        parts.salt = raw_parts[2][..22].chars().collect();
-        parts.hash = raw_parts[2][22..].chars().collect();
+        BASE_64
+            .decode_slice(&raw_parts[2][..22], &mut parts.salt)
+            .map_err(|_| BcryptError::InvalidHash("the salt part is not valid base64"))?;
+        BASE_64
+            .decode_slice(&raw_parts[2][22..], &mut parts.hash)
+            .map_err(|_| BcryptError::InvalidHash("the hash part is not valid base64"))?;
     } else {
         return Err(BcryptError::InvalidHash("the hash format is malformed"));
     }
@@ -186,7 +233,11 @@ fn split_hash(hash: &str) -> BcryptResult<HashParts> {
 /// The salt is generated randomly using the OS randomness
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
-    hash_with_result(password, cost).map(|r| r.format())
+    hash_with_result(password, cost).map(|r| {
+        String::from(
+            core::str::from_utf8(&r.format()).expect("base64 output is always valid UTF-8"),
+        )
+    })
 }
 
 /// Generates a password hash using the cost given.
@@ -194,7 +245,11 @@ pub fn hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
 /// Will return BcryptError::Truncation if password is longer than 72 bytes
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub fn non_truncating_hash<P: AsRef<[u8]>>(password: P, cost: u32) -> BcryptResult<String> {
-    non_truncating_hash_with_result(password, cost).map(|r| r.format())
+    non_truncating_hash_with_result(password, cost).map(|r| {
+        String::from(
+            core::str::from_utf8(&r.format()).expect("base64 output is always valid UTF-8"),
+        )
+    })
 }
 
 /// Generates a password hash using the cost given.
@@ -258,24 +313,9 @@ fn _verify<P: AsRef<[u8]>>(password: P, hash: &str, err_on_truncation: bool) -> 
     use subtle::ConstantTimeEq;
 
     let parts = split_hash(hash)?;
-    let salt = BASE_64
-        .decode(&parts.salt)
-        .map_err(|_| BcryptError::InvalidHash("the salt part is not valid base64"))?;
-    let generated = _hash_password(
-        password.as_ref(),
-        parts.cost,
-        salt.try_into()
-            .map_err(|_| BcryptError::InvalidHash("the salt length is not 16 bytes"))?,
-        err_on_truncation,
-    )?;
-    let source_decoded = BASE_64
-        .decode(parts.hash)
-        .map_err(|_| BcryptError::InvalidHash("the hash to verify against is not valid base64"))?;
-    let generated_decoded = BASE_64.decode(generated.hash).map_err(|_| {
-        BcryptError::InvalidHash("the generated hash for the password is not valid base64")
-    })?;
+    let generated = _hash_password(password.as_ref(), parts.cost, parts.salt, err_on_truncation)?;
 
-    Ok(source_decoded.ct_eq(&generated_decoded).into())
+    Ok(parts.hash.ct_eq(&generated.hash).into())
 }
 
 /// Verify that a password is equivalent to the hash provided
@@ -305,6 +345,7 @@ mod tests {
         },
         hash, hash_with_salt, non_truncating_verify, split_hash, verify,
     };
+    use base64::Engine as _;
     use core::convert::TryInto;
     use core::iter;
     use core::str::FromStr;
@@ -314,12 +355,12 @@ mod tests {
     fn can_split_hash() {
         let hash = "$2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
         let output = split_hash(hash).unwrap();
-        let expected = HashParts {
-            cost: 12,
-            salt: "L6Bc/AlTQHyd9liGgGEZyO".to_string(),
-            hash: "FLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u".to_string(),
-        };
-        assert_eq!(output, expected);
+        assert_eq!(output.get_cost(), 12);
+        assert_eq!(output.get_salt(), "L6Bc/AlTQHyd9liGgGEZyO");
+        assert_eq!(
+            output.format_for_version(Version::TwoY),
+            "$2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u"
+        );
     }
 
     #[test]
@@ -328,6 +369,38 @@ mod tests {
         let parsed = HashParts::from_str(hash).unwrap();
         assert_eq!(parsed.get_cost(), 12);
         assert_eq!(parsed.get_salt(), "L6Bc/AlTQHyd9liGgGEZyO".to_string());
+    }
+
+    #[test]
+    fn can_get_raw_salt_from_parsed_hash() {
+        let hash = "$2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
+        let parsed = HashParts::from_str(hash).unwrap();
+        // Raw salt must round-trip back to the same base64 string
+        assert_eq!(
+            super::BASE_64.encode(parsed.get_salt_raw()),
+            "L6Bc/AlTQHyd9liGgGEZyO"
+        );
+    }
+
+    #[test]
+    fn can_write_hash_for_version_without_allocating() {
+        let hash = "$2y$12$L6Bc/AlTQHyd9liGgGEZyOFLPHNgyxeEPfgYfBCVxJ7JIlwxyVU3u";
+        let parsed = HashParts::from_str(hash).unwrap();
+        let mut buf = String::new();
+        parsed.write_for_version(Version::TwoY, &mut buf).unwrap();
+        assert_eq!(buf, hash);
+    }
+
+    #[test]
+    fn write_for_version_matches_format_for_version() {
+        let salt = [0u8; 16];
+        let result = _hash_password("hunter2".as_bytes(), DEFAULT_COST, salt, false).unwrap();
+        let formatted = result.format_for_version(Version::TwoA);
+        let mut written = String::new();
+        result
+            .write_for_version(Version::TwoA, &mut written)
+            .unwrap();
+        assert_eq!(formatted, written);
     }
 
     #[test]
