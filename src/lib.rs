@@ -6,7 +6,7 @@
 extern crate alloc;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use alloc::{string::String, vec::Vec};
+use alloc::string::String;
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
@@ -91,7 +91,8 @@ impl HashParts {
     /// Creates the bcrypt hash string from all its parts, allowing to customize the version.
     pub fn format_for_version(&self, version: Version) -> String {
         let mut s = String::with_capacity(60);
-        self.write_for_version(version, &mut s).expect("writing into a String is infallible");
+        self.write_for_version(version, &mut s)
+            .expect("writing into a String is infallible");
         s
     }
 
@@ -189,44 +190,44 @@ fn _hash_password(
 /// cost, salt and hash
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn split_hash(hash: &str) -> BcryptResult<HashParts> {
-    let mut parts = HashParts {
-        cost: 0,
-        salt: [0u8; 16],
-        hash: [0u8; 23],
-    };
+    // A valid bcrypt hash is always exactly 60 bytes:
+    if hash.len() != 60 {
+        return Err(BcryptError::InvalidHash(
+            "the hash format is malformed; expected 60 bytes",
+        ));
+    }
 
-    // Should be [prefix, cost, hash]
-    let raw_parts: Vec<_> = hash.split('$').filter(|s| !s.is_empty()).collect();
-
-    if raw_parts.len() != 3 {
+    let bytes = hash.as_bytes();
+    if bytes[0] != b'$' || bytes[3] != b'$' || bytes[6] != b'$' {
         return Err(BcryptError::InvalidHash("the hash format is malformed"));
     }
 
-    if raw_parts[0] != "2y" && raw_parts[0] != "2b" && raw_parts[0] != "2a" && raw_parts[0] != "2x"
-    {
+    let version = &hash[1..3];
+    if version != "2y" && version != "2b" && version != "2a" && version != "2x" {
         return Err(BcryptError::InvalidHash(
             "the hash prefix is not a bcrypt prefix",
         ));
     }
 
-    if let Ok(c) = raw_parts[1].parse::<u32>() {
-        parts.cost = c;
-    } else {
-        return Err(BcryptError::InvalidHash("the cost value is not a number"));
-    }
+    let cost = hash[4..6]
+        .parse::<u32>()
+        .map_err(|_| BcryptError::InvalidHash("the cost value is not a number"))?;
 
-    if raw_parts[2].len() == 53 && raw_parts[2].is_char_boundary(22) {
-        BASE_64
-            .decode_slice(&raw_parts[2][..22], &mut parts.salt)
-            .map_err(|_| BcryptError::InvalidHash("the salt part is not valid base64"))?;
-        BASE_64
-            .decode_slice(&raw_parts[2][22..], &mut parts.hash)
-            .map_err(|_| BcryptError::InvalidHash("the hash part is not valid base64"))?;
-    } else {
-        return Err(BcryptError::InvalidHash("the hash format is malformed"));
-    }
+    let salt_and_hash = &hash[7..];
+    let mut salt = [0u8; 16];
+    let mut hash_bytes = [0u8; 23];
+    BASE_64
+        .decode_slice(&salt_and_hash[..22], &mut salt)
+        .map_err(|_| BcryptError::InvalidHash("the salt part is not valid base64"))?;
+    BASE_64
+        .decode_slice(&salt_and_hash[22..], &mut hash_bytes)
+        .map_err(|_| BcryptError::InvalidHash("the hash part is not valid base64"))?;
 
-    Ok(parts)
+    Ok(HashParts {
+        cost,
+        salt,
+        hash: hash_bytes,
+    })
 }
 
 /// Generates a password hash using the cost given.
