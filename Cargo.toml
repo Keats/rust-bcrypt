@@ -18,7 +18,7 @@ alloc = ["base64/alloc", "getrandom"]
 
 [dependencies]
 blowfish = { version = "0.9", features = ["bcrypt"] }
-getrandom = { version = "0.3", default-features = false, optional = true }
+getrandom = { version = "0.4", default-features = false, optional = true }
 base64 = { version = "0.22", default-features = false }
 zeroize = { version = "1.5.4", optional = true }
 subtle = { version = "2.4.1", default-features = false }
