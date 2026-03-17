@@ -1,4 +1,5 @@
 //! Easily hash and verify passwords using bcrypt
+#![deny(missing_docs)]
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -25,7 +26,9 @@ pub use crate::errors::{BcryptError, BcryptResult};
 // Cost constants
 const MIN_COST: u32 = 4;
 const MAX_COST: u32 = 31;
+/// The default cost parameter.
 pub const DEFAULT_COST: u32 = 12;
+/// Base64 variant used by bcrypt.
 pub const BASE_64: GeneralPurpose = GeneralPurpose::new(&BCRYPT, NO_PAD);
 
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -41,9 +44,13 @@ pub struct HashParts {
 /// BCrypt hash version
 /// https://en.wikipedia.org/wiki/Bcrypt#Versioning_history
 pub enum Version {
+    /// Version `$2a$`.
     TwoA,
+    /// Version `$2x$`.
     TwoX,
+    /// Version `$2y$`.
     TwoY,
+    /// Version `$2b$`.
     TwoB,
 }
 
