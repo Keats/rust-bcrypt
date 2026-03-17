@@ -1,7 +1,7 @@
 # bcrypt
 
 [![Safety Dance](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
-[![Build Status](https://travis-ci.org/Keats/rust-bcrypt.svg)](https://travis-ci.org/Keats/rust-bcrypt)
+[![Build Status](https://github.com/Keats/rust-bcrypt/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Keats/rust-bcrypt/actions/workflows/ci.yml)
 [![Documentation](https://docs.rs/bcrypt/badge.svg)](https://docs.rs/bcrypt)
 
 ## Installation
