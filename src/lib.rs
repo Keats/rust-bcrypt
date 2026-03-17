@@ -39,7 +39,7 @@ pub struct HashParts {
 
 #[derive(Clone, Debug)]
 /// BCrypt hash version
-/// https://en.wikipedia.org/wiki/Bcrypt#Versioning_history
+/// <https://en.wikipedia.org/wiki/Bcrypt#Versioning_history>
 pub enum Version {
     TwoA,
     TwoX,
