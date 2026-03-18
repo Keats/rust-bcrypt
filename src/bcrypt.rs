@@ -13,6 +13,10 @@ fn setup(cost: u32, salt: &[u8], key: &[u8]) -> Blowfish {
     state
 }
 
+/// The bcrypt key derivation function.
+///
+/// - `cost` must be between 4 and 31.
+/// - The length of `password` must be between 1 and 72.
 pub fn bcrypt(cost: u32, salt: [u8; 16], password: &[u8]) -> [u8; 24] {
     assert!(!password.is_empty() && password.len() <= 72);
 
