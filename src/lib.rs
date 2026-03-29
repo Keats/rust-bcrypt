@@ -1,6 +1,7 @@
 //! Easily hash and verify passwords using bcrypt
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 extern crate alloc;
