@@ -37,6 +37,9 @@ jobs:
     - name: Run tests
       run: cargo test
 
+    - name: Run tests with all features
+      run: cargo test --all-features
+
     - name: Run tests using no_std
       if: matrix.test_no_std == true
       run: cargo test --no-default-features --features alloc
@@ -82,4 +85,4 @@ jobs:
           toolchain: 1.85.0
           components: clippy
 
-      - run: cargo clippy -- -D warnings
+      - run: cargo clippy --all-features -- -D warnings

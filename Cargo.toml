@@ -12,7 +12,7 @@ edition = "2024"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [features]
-default = ["std", "zeroize", "password-hash"]
+default = ["std", "zeroize"]
 std = ["getrandom/std", "base64/std"]
 alloc = ["base64/alloc", "getrandom"]
 password-hash = ["dep:mcf", "dep:password-hash", "alloc"]
