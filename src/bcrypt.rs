@@ -1,8 +1,5 @@
 use blowfish::Blowfish;
 
-#[cfg(feature = "password-hash")]
-use crate::BcryptError;
-
 fn setup(cost: u32, salt: &[u8], key: &[u8]) -> Blowfish {
     assert!(cost < 32);
     let mut state = Blowfish::bc_init_state();
@@ -45,31 +42,9 @@ pub fn bcrypt(cost: u32, salt: [u8; 16], password: &[u8]) -> [u8; 24] {
 }
 
 #[cfg(feature = "password-hash")]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 /// bcrypt context.
-pub struct Bcrypt {
-    pub(crate) cost: u32,
-}
-
-#[cfg(feature = "password-hash")]
-impl Bcrypt {
-    /// Creates a new [`Bcrypt`] with the given `cost`.
-    pub const fn new(cost: u32) -> Result<Self, BcryptError> {
-        match cost {
-            cost @ 4..=31 => Ok(Self { cost }),
-            cost => Err(BcryptError::CostNotAllowed(cost)),
-        }
-    }
-}
-
-#[cfg(feature = "password-hash")]
-impl Default for Bcrypt {
-    fn default() -> Self {
-        Self {
-            cost: crate::DEFAULT_COST,
-        }
-    }
-}
+pub struct Bcrypt;
 
 #[cfg(test)]
 mod tests {

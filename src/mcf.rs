@@ -18,7 +18,7 @@ impl CustomizedPasswordHasher<PasswordHash> for Bcrypt {
         salt: &[u8],
         alg_id: Option<&str>,
         version: Option<password_hash::Version>,
-        params: Self::Params,
+        cost: Self::Params,
     ) -> Result<PasswordHash> {
         let hash_version = match alg_id {
             Some("2a") => Version::TwoA,
@@ -33,7 +33,7 @@ impl CustomizedPasswordHasher<PasswordHash> for Bcrypt {
         }
 
         let salt = salt.try_into().map_err(|_| Error::Internal)?;
-        let hash = crate::hash_with_salt(password, params, salt).map_err(|_| Error::Internal)?;
+        let hash = crate::hash_with_salt(password, cost, salt).map_err(|_| Error::Internal)?;
 
         let mcf_hash = hash.format_for_version(hash_version);
         let mcf_hash = PasswordHash::new(mcf_hash).unwrap();
@@ -43,7 +43,7 @@ impl CustomizedPasswordHasher<PasswordHash> for Bcrypt {
 
 impl PasswordHasher<PasswordHash> for Bcrypt {
     fn hash_password_with_salt(&self, password: &[u8], salt: &[u8]) -> Result<PasswordHash> {
-        self.hash_password_customized(password, salt, None, None, self.cost)
+        self.hash_password_customized(password, salt, None, None, crate::DEFAULT_COST)
     }
 }
 
@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn hash_password() {
         // 2a
-        let actual_hash: PasswordHash = Bcrypt::default()
+        let actual_hash: PasswordHash = Bcrypt
             .hash_password_customized(b"hunter2", &[0; 16], Some("2a"), None, crate::DEFAULT_COST)
             .unwrap();
         let expected_hash =
@@ -82,7 +82,7 @@ mod tests {
                 .unwrap();
         assert_eq!(expected_hash, actual_hash);
         // 2b
-        let actual_hash: PasswordHash = Bcrypt::default()
+        let actual_hash: PasswordHash = Bcrypt
             .hash_password_with_salt(b"hunter2", &[0; 16])
             .unwrap();
         let expected_hash =
@@ -90,7 +90,7 @@ mod tests {
                 .unwrap();
         assert_eq!(expected_hash, actual_hash);
         // 2x
-        let actual_hash: PasswordHash = Bcrypt::default()
+        let actual_hash: PasswordHash = Bcrypt
             .hash_password_customized(b"hunter2", &[0; 16], Some("2x"), None, crate::DEFAULT_COST)
             .unwrap();
         let expected_hash =
@@ -98,7 +98,7 @@ mod tests {
                 .unwrap();
         assert_eq!(expected_hash, actual_hash);
         // 2y
-        let actual_hash: PasswordHash = Bcrypt::default()
+        let actual_hash: PasswordHash = Bcrypt
             .hash_password_customized(b"hunter2", &[0; 16], Some("2y"), None, crate::DEFAULT_COST)
             .unwrap();
         let expected_hash =
@@ -113,13 +113,13 @@ mod tests {
         let hash =
             PasswordHashRef::new("$2a$04$UuTkLRZZ6QofpDOlMz32MuuxEHA43WOemOYHPz6.SjsVsyO1tDU96")
                 .unwrap();
-        assert_eq!(Bcrypt::default().verify_password(b"password", hash), Ok(()));
+        assert_eq!(Bcrypt.verify_password(b"password", hash), Ok(()));
         // `can_verify_hash_generated_from_python`
         let hash =
             PasswordHashRef::new("$2b$04$EGdrhbKUv8Oc9vGiXX0HQOxSg445d458Muh7DAHskb6QbtCvdxcie")
                 .unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(b"correctbatteryhorsestapler", hash),
+            Bcrypt.verify_password(b"correctbatteryhorsestapler", hash),
             Ok(())
         );
         // `can_verify_hash_generated_from_node`
@@ -127,7 +127,7 @@ mod tests {
             PasswordHashRef::new("$2a$04$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk5bektyVVa5xnIi")
                 .unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(b"correctbatteryhorsestapler", hash),
+            Bcrypt.verify_password(b"correctbatteryhorsestapler", hash),
             Ok(())
         );
         // `can_verify_hash_generated_from_go`
@@ -138,10 +138,7 @@ mod tests {
         let hash =
             PasswordHashRef::new("$2a$04$tjARW6ZON3PhrAIRW2LG/u9aDw5eFdstYLR8nFCNaOQmsH9XD23w.")
                 .unwrap();
-        assert_eq!(
-            Bcrypt::default().verify_password(&binary_input, hash),
-            Ok(())
-        );
+        assert_eq!(Bcrypt.verify_password(&binary_input, hash), Ok(()));
 
         // `invalid_hash_does_not_panic`
         let binary_input = [
@@ -150,7 +147,7 @@ mod tests {
         ];
         let hash = PasswordHashRef::new("$2a$04$tjARW6ZON3PhrAIRW2LG/u9a.").unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(&binary_input, hash),
+            Bcrypt.verify_password(&binary_input, hash),
             Err(Error::Internal)
         );
         // `a_wrong_password_is_false`
@@ -158,7 +155,7 @@ mod tests {
             PasswordHashRef::new("$2b$04$EGdrhbKUv8Oc9vGiXX0HQOxSg445d458Muh7DAHskb6QbtCvdxcie")
                 .unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(b"wrong", hash),
+            Bcrypt.verify_password(b"wrong", hash),
             Err(Error::PasswordInvalid)
         );
         // `errors_with_invalid_hash`
@@ -166,7 +163,7 @@ mod tests {
             PasswordHashRef::new("$2a$04$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk$5bektyVVa5xnIi")
                 .unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(b"correctbatteryhorsestapler", hash),
+            Bcrypt.verify_password(b"correctbatteryhorsestapler", hash),
             Err(Error::Internal)
         );
         // `errors_with_non_number_cost`
@@ -174,7 +171,7 @@ mod tests {
             PasswordHashRef::new("$2a$ab$n4Uy0eSnMfvnESYL.bLwuuj0U/ETSsoTpRT9GVk$5bektyVVa5xnIi")
                 .unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(b"correctbatteryhorsestapler", hash),
+            Bcrypt.verify_password(b"correctbatteryhorsestapler", hash),
             Err(Error::Internal)
         );
         // `errors_with_a_hash_too_long`
@@ -183,7 +180,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            Bcrypt::default().verify_password(b"correctbatteryhorsestapler", hash),
+            Bcrypt.verify_password(b"correctbatteryhorsestapler", hash),
             Err(Error::Internal)
         );
     }
