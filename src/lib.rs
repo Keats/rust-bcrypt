@@ -190,10 +190,12 @@ fn _hash_password(
 /// cost, salt and hash
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn split_hash(hash: &str) -> BcryptResult<HashParts> {
-    // A valid bcrypt hash is always exactly 60 bytes:
-    if hash.len() != 60 {
+    // A valid bcrypt hash is always exactly 60 ASCII bytes. Rejecting
+    // non-ASCII up front avoids panics from `&str` slicing through the
+    // middle of a multi-byte UTF-8 character (regression of #62).
+    if hash.len() != 60 || !hash.is_ascii() {
         return Err(BcryptError::InvalidHash(
-            "the hash format is malformed; expected 60 bytes",
+            "the hash format is malformed; expected 60 ASCII bytes",
         ));
     }
 
@@ -747,5 +749,31 @@ mod tests {
             &[],
             "2a$$$0$OOOOOOOOOOOOOOOOOOOOO£OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
         );
+    }
+
+    #[test]
+    fn verify_rejects_multibyte_utf8_in_hash() {
+        // Constructed so byte position 22 falls inside the multi-byte
+        // sequence for '£' (0xC2 0xA3). Before this fix, this hash would
+        // panic in str::slice_error_fail when split_hash sliced
+        // &salt_and_hash[..22]. After: returns InvalidHash, like every
+        // other malformed input. Regression test for #62.
+        let hash = "$2b$04$aaaaaaaaaaaaaaaaaaaaa£aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assert_eq!(hash.len(), 60); // sanity: byte length is still 60
+        assert!(matches!(
+            verify(&b"password"[..], hash),
+            Err(BcryptError::InvalidHash(_))
+        ));
+    }
+
+    #[test]
+    fn split_hash_rejects_non_ascii() {
+        // Direct parser-level test of the invariant: any non-ASCII byte
+        // anywhere in a 60-byte hash string is rejected up front.
+        let hash = "$2b$04$aaaaaaaaaaaaaaaaaaaaa£aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assert!(matches!(
+            split_hash(hash),
+            Err(BcryptError::InvalidHash(_))
+        ));
     }
 }
