@@ -60,6 +60,7 @@ for new projects.
 
 ## Changelog
 
+* 0.19.3: bump base64 dep
 * 0.19.2: ensure hashes are ascii when decoding
 * 0.19.1: bump blowfish dep
 * 0.19.0: update getrandom and remove some allocations
