@@ -16,9 +16,16 @@ use core::fmt;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use {base64::Engine, core::convert::AsRef, core::str::FromStr};
 
+#[cfg(feature = "password-hash")]
+pub use password_hash;
+
 mod bcrypt;
 mod errors;
+#[cfg(feature = "password-hash")]
+pub mod mcf;
 
+#[cfg(feature = "password-hash")]
+pub use crate::bcrypt::Bcrypt;
 pub use crate::bcrypt::bcrypt;
 pub use crate::errors::{BcryptError, BcryptResult};
 

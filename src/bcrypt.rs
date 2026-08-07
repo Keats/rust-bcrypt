@@ -41,6 +41,11 @@ pub fn bcrypt(cost: u32, salt: [u8; 16], password: &[u8]) -> [u8; 24] {
     output
 }
 
+#[cfg(feature = "password-hash")]
+#[derive(Clone, Copy, Debug)]
+/// bcrypt context.
+pub struct Bcrypt;
+
 #[cfg(test)]
 mod tests {
     use super::bcrypt;
